@@ -4,7 +4,11 @@ import { useInfiniteHits } from 'react-instantsearch'
 import VideoCard from './VideoCard'
 import type { VideoHit } from './types'
 
-export default function InfiniteScrollHits() {
+interface InfiniteScrollHitsProps {
+  onVideoSelect?: (video: VideoHit) => void
+}
+
+export default function InfiniteScrollHits({ onVideoSelect }: InfiniteScrollHitsProps) {
     const { items, showMore, isLastPage } = useInfiniteHits<VideoHit>()
     const sentinelRef = useRef<HTMLDivElement | null>(null)
 
@@ -29,18 +33,19 @@ export default function InfiniteScrollHits() {
 
     return (
         <>
-            <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((hit) => (
-                    <VideoCard key={hit.id} hit={hit} />
+                    <VideoCard key={hit.id} hit={hit} onVideoSelect={onVideoSelect} />
                 ))}
             </div>
 
             {!isLastPage && (
                 <div
                     ref={sentinelRef}
-                    className="h-12 flex justify-center items-center text-gray-400 text-sm mt-6"
+                    className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500"
                 >
-                    Loading more…
+                    <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-transparent" />
+                    Loading more videos...
                 </div>
             )}
         </>

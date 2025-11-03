@@ -1,4 +1,153 @@
 @import "tailwindcss";
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
-@import "tailwindcss/theme";
+@import "video.js/dist/video-js.css";
+
+@layer components {
+  /* Clean search box styles */
+  .search-box .ais-SearchBox-form {
+    @apply relative;
+  }
+
+  .search-box .ais-SearchBox-input {
+    @apply w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+  }
+
+  .search-box .ais-SearchBox-submit {
+    @apply pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400;
+  }
+
+  .search-box .ais-SearchBox-submitIcon {
+    @apply h-4 w-4;
+  }
+
+  .search-box .ais-SearchBox-reset {
+    @apply absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600;
+  }
+
+  .search-box .ais-SearchBox-resetIcon {
+    @apply h-4 w-4;
+  }
+
+  /* Filter search box styles */
+  .filter-search .ais-SearchBox-form {
+    @apply relative mb-4;
+  }
+
+  .filter-search .ais-SearchBox-input {
+    @apply w-full rounded-lg border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-900 placeholder-gray-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200;
+  }
+
+  .filter-search .ais-SearchBox-submit {
+    @apply pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400;
+  }
+
+  .filter-search .ais-SearchBox-submitIcon {
+    @apply h-4 w-4;
+  }
+
+  .filter-search .ais-SearchBox-reset {
+    @apply absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer;
+  }
+
+  .filter-search .ais-SearchBox-resetIcon {
+    @apply h-4 w-4;
+  }
+
+  /* Filter list styles */
+  .filter-list .ais-RefinementList-searchBox {
+    @apply mb-3;
+  }
+
+  /* Filter search box styling */
+  .filter-list .ais-SearchBox-form {
+    @apply relative;
+  }
+
+  .filter-list .ais-SearchBox-input {
+    @apply w-full rounded border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+  }
+
+  .filter-list .ais-SearchBox-submit {
+    @apply pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400;
+  }
+
+  .filter-list .ais-SearchBox-submitIcon {
+    @apply h-3 w-3;
+  }
+
+  .filter-list .ais-SearchBox-reset {
+    @apply absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer;
+  }
+
+  .filter-list .ais-SearchBox-resetIcon {
+    @apply h-3 w-3;
+  }
+
+  .filter-list .ais-RefinementList-item {
+    @apply mb-1;
+  }
+
+  .filter-list .ais-RefinementList-label {
+    @apply flex cursor-pointer items-center rounded px-2 py-1 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900;
+  }
+
+  /* Remove text highlighting from filter items */
+  .filter-list .ais-RefinementList-labelText mark {
+    @apply bg-transparent text-current font-normal;
+  }
+
+  .filter-list .ais-RefinementList-checkbox {
+    @apply mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0;
+  }
+
+  .filter-list .ais-RefinementList-labelText {
+    @apply flex-1;
+  }
+
+  .filter-list .ais-RefinementList-count {
+    @apply ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600;
+  }
+
+  .filter-list .ais-RefinementList-noResults {
+    @apply text-sm text-gray-500 italic;
+  }
+
+  .filter-list .ais-RefinementList-showMore {
+    @apply mt-2 text-xs text-blue-600 hover:text-blue-800 cursor-pointer underline;
+  }
+
+  /* Video.js player styling */
+  .video-js {
+    @apply w-full h-full;
+  }
+
+  .video-js .vjs-big-play-button {
+    @apply border-none bg-black/60 rounded-full;
+    font-size: 3em;
+    line-height: 1.5em;
+    height: 1.5em;
+    width: 1.5em;
+    margin-left: -0.75em;
+    margin-top: -0.75em;
+  }
+
+  .video-js .vjs-big-play-button:hover {
+    @apply bg-black/80;
+  }
+
+  .video-js .vjs-control-bar {
+    @apply bg-gradient-to-t from-black/80 to-transparent;
+    height: 4em;
+  }
+
+  .video-js .vjs-progress-control .vjs-progress-holder {
+    @apply bg-white/20;
+  }
+
+  .video-js .vjs-progress-control .vjs-play-progress {
+    @apply bg-blue-500;
+  }
+
+  .video-js .vjs-progress-control .vjs-load-progress {
+    @apply bg-white/40;
+  }
+}

@@ -30,4 +30,18 @@ export interface VideoHit {
   created?: string | number
   modified?: string | number
   active?: boolean
+  // Additional fields from the actual data structure
+  category?: string[]
+  channel?: string[]
+  length?: string
+  bid?: number[]
+  billing?: number
+  bookmark?: number
+  cid?: number
+  hash?: number[]
+  plan?: number
+  trial?: number
+  trusted?: number
+  uid?: string
+  objectID?: string
 }
