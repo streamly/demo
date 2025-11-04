@@ -19,7 +19,12 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@client/*": ["./client/*"],
+      "@server/*": ["./server/*"],
+      "@db/*": ["./server/db/*"],
+      "@shared/*": ["./shared/*"],
+      "@components/*": ["./client/components/*"]
     }
   },
   "include": [

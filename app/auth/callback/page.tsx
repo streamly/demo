@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { useAuth } from '../../src/components/AuthProvider'
+import { useAuth } from '@client/components/auth/AuthProvider'
 
 export default function AuthCallback() {
   const router = useRouter()
@@ -48,8 +48,8 @@ export default function AuthCallback() {
         const hasCompleteProfile = checkIfUserHasCompleteProfile()
         
         if (!hasCompleteProfile) {
-          console.log('👤 Profile incomplete, redirecting to profile page')
-          router.push('/profile?reason=signin-incomplete')
+          console.log('👤 Profile incomplete, redirecting to home with modal trigger')
+          router.push('/?showProfileModal=true')
         } else {
           console.log('🏠 Profile complete, redirecting to home page')
           router.push('/')

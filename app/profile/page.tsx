@@ -1,9 +1,9 @@
 'use client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
-import { useAuth } from '../src/components/AuthProvider'
-import FormField from '../src/components/FormField'
-import SelectField from '../src/components/SelectField'
+import { useAuth } from '@client/components/auth/AuthProvider'
+import FormField from '@client/components/forms/FormField'
+import SelectField from '@client/components/forms/SelectField'
 
 const industries = [
   { value: 'Advertising', label: 'Advertising' },

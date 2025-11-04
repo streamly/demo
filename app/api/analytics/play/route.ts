@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { createHash, randomUUID } from 'crypto'
-import { setAnalyticsData, pushToList, setExpire } from '../../lib/redisClient'
-import { verifyAuthgearUser, getUserInfoFromAuthgear, AuthgearError } from '../../lib/authgearClient'
-import { getVideoById, getVideoByObjectId } from '../../lib/typesense'
+import { NextRequest, NextResponse } from 'next/server'
+import { getUserInfoFromAuthgear, verifyAuthgearUser } from '@server/authgearClient'
+import { pushToList, setAnalyticsData, setExpire } from '@server/redisClient'
+import { getVideoById, getVideoByObjectId } from '@server/typesense'
 
 interface VideoPlayActionData {
   uuid: string
@@ -33,13 +33,13 @@ function getUserUUID(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
   const realIP = request.headers.get('x-real-ip')
   const remoteAddr = request.headers.get('remote-addr')
-  
+
   // Try different headers to get the real IP
   const ip = forwarded?.split(',')[0] || realIP || remoteAddr || 'unknown'
-  
+
   // Create MD5 hash of IP
   const hash = createHash('md5').update(ip).digest('hex')
-  
+
   return hash
 }
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization')
     const jwtPayload = await verifyAuthgearUser(authHeader || undefined)
     const token = authHeader!.slice("Bearer ".length).trim()
-    
+
     const body = await request.json()
     const { videoId } = body
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       // Try by objectID if not found by id
       videoData = await getVideoByObjectId(videoId)
     }
-    
+
     if (!videoData) {
       return NextResponse.json(
         { error: 'Video not found' },

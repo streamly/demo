@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateUserMetadata, AuthgearError, verifyAuthgearUser } from '../lib/authgearClient'
-import { UserMetadataSchema } from '../lib/validation'
-import { setProfileData } from '../lib/redisClient'
+import { AuthgearError, updateUserMetadata, verifyAuthgearUser } from '@server/authgearClient'
+import { setProfileData } from '@server/redisClient'
+import { UserMetadataSchema } from '@server/validation'
 
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
     const decoded = await verifyAuthgearUser(authHeader || undefined)
     const userId = decoded.sub
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: "Missing user ID in token" },
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const sanitized = parsed.data
 
     await updateUserMetadata(userId, sanitized)
-    
+
     try {
       await setProfileData(userId, sanitized)
     } catch (error) {
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true }, { status: 200 })
-    
+
   } catch (err: any) {
     if (err instanceof AuthgearError) {
       return NextResponse.json(
@@ -70,10 +70,10 @@ export async function GET(request: NextRequest) {
     // 1. Get user ID from authentication token
     // 2. Fetch profile from database
     // 3. Return user's current profile data
-    
+
     // For now, return a placeholder response
     return NextResponse.json(
-      { 
+      {
         message: 'Profile retrieval endpoint',
         note: 'Implement database integration to fetch user profile'
       },

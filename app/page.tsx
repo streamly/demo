@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Configure,
   InstantSearch,
@@ -7,15 +8,17 @@ import {
 } from 'react-instantsearch'
 import TypesenseInstantSearchAdapter from 'typesense-instantsearch-adapter'
 
-import InfiniteScrollHits from './src/components/InifiniteScrollHits'
-import JumbotronBanner from './src/components/JumbotronBanner'
-import SearchHeader from './src/components/SearchHeader'
-import SidebarFilters from './src/components/SidebarFilters'
-import VideoModal from './src/components/VideoModal'
-import { useAuth } from './src/components/AuthProvider'
-import { typesenseService } from './src/services/typesenseService'
-import { urlService } from './src/services/urlService'
-import type { VideoHit } from './src/components/types'
+import InfiniteScrollHits from '@client/components/search/InifiniteScrollHits'
+import JumbotronBanner from '@client/components/layout/JumbotronBanner'
+import SearchHeader from '@client/components/search/SearchHeader'
+import SidebarFilters from '@client/components/search/SidebarFilters'
+import VideoModal from '@client/components/video/VideoModal'
+import ProfileModal from '@client/components/modals/ProfileModal'
+import LoadingScreen from '@client/components/ui/LoadingScreen'
+import { useAuth } from '@client/components/auth/AuthProvider'
+import { typesenseService } from '@client/services/typesenseService'
+import { urlService } from '@client/services/urlService'
+import type { VideoHit } from '@client/components/types'
 
 const typesenseAdapter = new TypesenseInstantSearchAdapter({
   server: {
@@ -38,11 +41,13 @@ const searchClient = typesenseAdapter.searchClient
 function SearchLayout() {
   const { indexUiState } = useInstantSearch()
   const { isAuthenticated, isLoading: authLoading, checkIfUserHasCompleteProfile } = useAuth()
+  const searchParams = useSearchParams()
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [hasEverSearched, setHasEverSearched] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<VideoHit | null>(null)
   const [isLoadingVideo, setIsLoadingVideo] = useState(false)
   const [pendingVideoId, setPendingVideoId] = useState<string | null>(null)
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   // Check if user has searched (has query or filters)
   const hasSearched = !!(
@@ -52,7 +57,24 @@ function SearchLayout() {
     indexUiState.hierarchicalMenu
   )
 
-  // Track if user has ever interacted with search
+  useEffect(() => {
+    if (hasSearched) {
+      setHasEverSearched(true)
+    }
+  }, [hasSearched])
+
+  useEffect(() => {
+    const shouldShowProfileModal = searchParams.get('showProfileModal') === 'true'
+    if (shouldShowProfileModal && isAuthenticated && !authLoading) {
+      const hasCompleteProfile = checkIfUserHasCompleteProfile()
+      if (!hasCompleteProfile) {
+        setShowProfileModal(true)
+        // Clean up URL
+        window.history.replaceState({}, '', '/')
+      }
+    }
+  }, [searchParams, isAuthenticated, authLoading, checkIfUserHasCompleteProfile])
+
   const handleSearchFocus = (focused: boolean) => {
     setIsSearchFocused(focused)
     if (focused) {
@@ -163,19 +185,32 @@ function SearchLayout() {
 
   return (
     <div className="min-h-screen">
-      <SearchHeader onSearchFocus={handleSearchFocus} />
+      <SearchHeader 
+        onSearchFocus={handleSearchFocus} 
+        onProfileModalOpen={() => setShowProfileModal(true)}
+      />
 
-      {/* Jumbotron Banner - show when not in search mode */}
-      {!showSearchMode && <JumbotronBanner />}
+      {/* Page Content Loader - show while auth is loading */}
+      {authLoading ? (
+        <LoadingScreen 
+          title="Loading Bizilla Videos"
+          subtitle="Please wait while we initialize the application..."
+        />
+      ) : (
+        <>
+          {/* Jumbotron Banner - show when not in search mode */}
+          {!showSearchMode && <JumbotronBanner />}
 
-      <div className="flex">
-        {/* Sidebar Filters - show when in search mode */}
-        {showSearchMode && <SidebarFilters />}
+          <div className="flex">
+            {/* Sidebar Filters - show when in search mode */}
+            {showSearchMode && <SidebarFilters />}
 
-        <main className={`flex-1 p-6 ${!showSearchMode ? 'max-w-7xl mx-auto' : ''}`}>
-          <InfiniteScrollHits onVideoSelect={handleVideoSelect} />
-        </main>
-      </div>
+            <main className={`flex-1 p-6 ${!showSearchMode ? 'max-w-7xl mx-auto' : 'ml-64'}`}>
+              <InfiniteScrollHits onVideoSelect={handleVideoSelect} />
+            </main>
+          </div>
+        </>
+      )}
 
       {/* Video Modal */}
       {selectedVideo && (
@@ -184,6 +219,12 @@ function SearchLayout() {
           <VideoModal hit={selectedVideo} onClose={handleVideoClose} />
         </>
       )}
+
+      {/* Profile Modal */}
+      <ProfileModal 
+        isOpen={showProfileModal} 
+        onClose={() => setShowProfileModal(false)} 
+      />
 
       {/* Loading State */}
       {(isLoadingVideo || (authLoading && pendingVideoId)) && (

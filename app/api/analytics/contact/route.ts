@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserInfoFromAuthgear, verifyAuthgearUser } from '../../lib/authgearClient'
-import { pushToList, setAnalyticsData, setExpire } from '../../lib/redisClient'
-import { getVideoById, getVideoByObjectId } from '../../lib/typesense'
+import { getUserInfoFromAuthgear, verifyAuthgearUser } from '@server/authgearClient'
+import { pushToList, setAnalyticsData, setExpire } from '@server/redisClient'
+import { getVideoById, getVideoByObjectId } from '@server/typesense'
 
 interface ContactActionData {
   uuid: string
