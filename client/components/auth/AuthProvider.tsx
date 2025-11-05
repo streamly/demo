@@ -1,8 +1,8 @@
 'use client'
+import { checkAuthState as checkAuth, signIn as authSignIn, signOut as authSignOut } from '@client/services/authService'
+import { validateProfileData, isProfileComplete, saveProfile } from '@client/services/profileService'
+import { AuthContextType, AuthUser, UserProfile } from '@client/types/profile'
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react'
-import { authService } from '@client/services/authService'
-import { profileService } from '@client/services/profileService'
-import { UserProfile, AuthContextType, AuthUser } from '@client/types/profile'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
@@ -21,24 +21,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const custom = userInfo.customAttributes ?? {}
     return {
-      firstname: userInfo.givenName || '',
-      lastname: userInfo.familyName || '',
+      givenName: userInfo.givenName || '',
+      familyName: userInfo.familyName || '',
       email: userInfo.email || '',
       phone: custom.phone || '',
       position: custom.position || '',
       company: custom.company || '',
       industry: custom.industry || '',
-      url: custom.url || ''
+      website: custom.url || ''
     }
   }
 
   const checkAuthState = async () => {
     try {
-      const { isAuthenticated: authStatus, user: userInfo } = await authService.checkAuthState()
-      
+      const { isAuthenticated: authStatus, user: userInfo } = await checkAuth()
+
       setIsAuthenticated(authStatus)
       setUser(userInfo)
-      
+
       if (authStatus && userInfo) {
         setUserProfile(extractUserProfile(userInfo))
       } else {
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signIn = async () => {
     try {
-      await authService.signIn()
+      await authSignIn()
     } catch (error) {
       console.error('Sign in failed:', error)
     }
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async () => {
     try {
       setIsLoading(true)
-      await authService.signOut()
+      await authSignOut()
       setIsAuthenticated(false)
       setUser(null)
       setUserProfile({})
@@ -94,21 +94,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   const getMissingProfileFields = (): string[] => {
-    return profileService.validateProfileData(userProfile)
+    return validateProfileData(userProfile)
   }
 
   const checkIfUserHasCompleteProfile = (): boolean => {
-    return profileService.isProfileComplete(userProfile)
+    return isProfileComplete(userProfile)
   }
 
   const updateUserProfile = async (profile: UserProfile): Promise<boolean> => {
     try {
-      const response = await profileService.updateProfile(profile)
-      if (response.success) {
-        setUserProfile(profile)
-        return true
-      }
-      return false
+      await saveProfile(profile)
+      setUserProfile(profile)
+      return true
     } catch (error) {
       console.error('Failed to update profile:', error)
       return false

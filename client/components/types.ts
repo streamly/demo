@@ -1,15 +1,28 @@
 export interface VideoHit {
+  // Core fields from new schema
   id: string
   title: string
   description?: string
+  duration?: number
+  types?: string[]           // Video categories (Corporate, Investor, Event, etc.)
+  audiences?: string[]       // Target audiences (Investors, Professionals, etc.)
+  companies?: string[]       // Related companies (Tesla, Apple, etc.)
+  topics?: string[]          // Topics covered (Electric Vehicles, AI, etc.)
+  tags?: string[]           // Generic tags for filtering and search
+  people?: string[]         // People featured or mentioned
+  visibility?: string       // public, unlisted, private
+  format?: string          // File format or content type
+  thumbnail?: string       // URL for video thumbnail
+  created_at?: number      // Unix timestamp (ms)
+  updated_at?: number      // Unix timestamp (ms)
+
+  // Legacy fields for backward compatibility (optional)
   company?: string
   publisher?: string
   host?: string
   hostDescription?: string
   industry?: string
-  thumbnail?: string
   url?: string
-  duration?: number
   width?: number
   height?: number
   size?: number
@@ -23,14 +36,11 @@ export interface VideoHit {
   score?: number
   cpv?: number
   budget?: number
-  tags?: string[]
   topic?: string
   audience?: string
-  format?: string
   created?: string | number
   modified?: string | number
   active?: boolean
-  // Additional fields from the actual data structure
   category?: string[]
   channel?: string[]
   length?: string

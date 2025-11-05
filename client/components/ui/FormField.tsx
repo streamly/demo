@@ -19,7 +19,7 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
   ({ label, error, required, className = '', ...props }, ref) => (
     <div className={className}>
       <label htmlFor={props.id} className="block text-sm font-medium text-gray-700 mb-2">
-        {label} {required && '*'}
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
         ref={ref}
@@ -35,7 +35,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
   ({ label, error, required, options, placeholder, className = '', ...props }, ref) => (
     <div className={className}>
       <label htmlFor={props.id} className="block text-sm font-medium text-gray-700 mb-2">
-        {label} {required && '*'}
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       <select
         ref={ref}

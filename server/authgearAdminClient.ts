@@ -56,7 +56,7 @@ function generateAdminJwt(): string {
 
     const privateKey = loadAdminPrivateKey()
     const now = Math.floor(Date.now() / 1000)
-    const exp = now + 5 * 60 // valid for 5 min
+    const exp = now + 5 * 60 
 
     const header = { alg: "RS256", typ: "JWT", kid: AUTHGEAR_ADMIN_KEY_ID }
     const payload = { aud: [AUTHGEAR_PROJECT_ID], iat: now, exp }

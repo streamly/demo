@@ -1,158 +1,213 @@
-import { VideoHit } from '@client/components/types'
+import { VideoHit } from "@client/components/types"
+import Typesense from "typesense"
+import TypesenseInstantSearchAdapter from 'typesense-instantsearch-adapter'
 
-class TypesenseService {
-  private baseUrl: string
-  private apiKey: string
+// Log environment configuration (safe subset)
+if (process.env.NODE_ENV !== "production") {
+  console.log("[Typesense Config]:")
+  console.log("  HOST:", process.env.NEXT_PUBLIC_TYPESENSE_HOST)
+  console.log("  PORT:", process.env.NEXT_PUBLIC_TYPESENSE_PORT)
+  console.log("  PROTOCOL:", process.env.NEXT_PUBLIC_TYPESENSE_PROTOCOL)
+  console.log("  SEARCH KEY set:", Boolean(process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY))
+}
 
-  constructor() {
-    this.baseUrl = `https://${process.env.NEXT_PUBLIC_TYPESENSE_HOST || ''}`
-    this.apiKey = process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY || ''
-  }
+// Shared Typesense configuration
+export const typesenseConfig = {
+  host: process.env.NEXT_PUBLIC_TYPESENSE_HOST!,
+  port: parseInt(process.env.NEXT_PUBLIC_TYPESENSE_PORT!),
+  protocol: process.env.NEXT_PUBLIC_TYPESENSE_PROTOCOL! as 'http' | 'https',
+  apiKey: process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY!,
+}
 
-  async findVideoById(videoId: string): Promise<VideoHit | null> {
+// Initialize Typesense client for direct API calls
+const client = new Typesense.Client({
+  nodes: [typesenseConfig],
+  apiKey: typesenseConfig.apiKey,
+  connectionTimeoutSeconds: 2,
+})
+
+// Create InstantSearch adapter with shared config
+export function createInstantSearchAdapter(apiKey?: string) {
+  return new TypesenseInstantSearchAdapter({
+    server: {
+      apiKey: apiKey || typesenseConfig.apiKey,
+      nodes: [typesenseConfig],
+    },
+    additionalSearchParameters: {
+      query_by: 'title,description,types,audiences,companies,topics,tags,people',
+      sort_by: 'created_at:desc',
+      // Performance optimizations
+      highlight_full_fields: 'title,description',
+      highlight_affix_num_tokens: 3,
+      typo_tokens_threshold: 1,
+      drop_tokens_threshold: 1,
+      prioritize_exact_match: true,
+      prioritize_token_position: true,
+    },
+  })
+}
+
+function isConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_TYPESENSE_HOST &&
+    process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY
+  )
+}
+
+export async function findVideoById(videoId: string): Promise<VideoHit | null> {
+  try {
+    if (!isConfigured()) {
+      console.warn("Typesense not configured")
+      return null
+    }
+
+    // Try searching by id field first
     try {
-      if (!this.isConfigured()) {
-        console.warn('Typesense not configured')
-        return null
-      }
-
-      // Try searching by ID using filter instead of query_by
-      const searchParams = new URLSearchParams({
-        q: '*',
+      const searchResults = await client.collections("videos").documents().search({
+        q: "*",
         filter_by: `id:=${videoId}`,
-        per_page: '1',
+        per_page: 1,
       })
 
-      console.log('Typesense search URL:', `${this.baseUrl}/collections/videos/documents/search?${searchParams}`)
-      
-      let response = await fetch(`${this.baseUrl}/collections/videos/documents/search?${searchParams}`, {
-        headers: {
-          'X-TYPESENSE-API-KEY': this.apiKey,
-        },
-      })
-
-      console.log('Typesense response status:', response.status)
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Typesense search results:', data)
-        if (data.hits && data.hits.length > 0) {
-          console.log('Found video by ID field:', data.hits[0].document.title)
-          return data.hits[0].document as VideoHit
-        }
-      } else {
-        const errorData = await response.text()
-        console.error('Typesense ID search failed:', response.status, errorData)
+      if (searchResults.hits && searchResults.hits.length > 0) {
+        console.log("Found video by id:", searchResults.hits[0].document)
+        return searchResults.hits[0].document as VideoHit
       }
-
-      // Fallback: try searching by objectID using filter
-      const fallbackParams = new URLSearchParams({
-        q: '*',
-        filter_by: `objectID:=${videoId}`,
-        per_page: '1',
-      })
-
-      response = await fetch(`${this.baseUrl}/collections/videos/documents/search?${fallbackParams}`, {
-        headers: {
-          'X-TYPESENSE-API-KEY': this.apiKey,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.hits && data.hits.length > 0) {
-          return data.hits[0].document as VideoHit
-        }
-      }
-
-      // Final fallback: search in title and description for the video ID
-      const allFieldsParams = new URLSearchParams({
-        q: videoId,
-        query_by: 'title,description',
-        per_page: '10',
-      })
-
-      response = await fetch(`${this.baseUrl}/collections/videos/documents/search?${allFieldsParams}`, {
-        headers: {
-          'X-TYPESENSE-API-KEY': this.apiKey,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.hits && data.hits.length > 0) {
-          // Find exact match in the results
-          const exactMatch = data.hits.find((hit: any) => 
-            hit.document.id === videoId || hit.document.objectID === videoId
-          )
-          if (exactMatch) {
-            return exactMatch.document as VideoHit
-          }
-          // If no exact match, return the first result
-          return data.hits[0].document as VideoHit
-        }
-      }
-
-      return null
-    } catch (error) {
-      console.error('Failed to find video by ID:', error)
-      return null
+    } catch {
+      console.warn("Search by 'id' failed, trying 'objectID'")
     }
-  }
 
-  async searchVideos(query: string, filters?: Record<string, any>): Promise<VideoHit[]> {
+    // Try searching by objectID field
     try {
-      if (!this.isConfigured()) {
-        console.warn('Typesense not configured')
-        return []
-      }
-
-      // Build filter string
-      let filterString = ''
-      if (filters) {
-        const filterParts: string[] = []
-        Object.entries(filters).forEach(([key, value]) => {
-          if (Array.isArray(value) && value.length > 0) {
-            filterParts.push(`${key}:[${value.map(v => `"${v}"`).join(',')}]`)
-          } else if (value && typeof value === 'string') {
-            filterParts.push(`${key}:="${value}"`)
-          }
-        })
-        filterString = filterParts.join(' && ')
-      }
-
-      const searchParams = new URLSearchParams({
-        q: query || '*',
-        query_by: 'title,description,company,publisher,tags',
-        per_page: '20',
-        sort_by: '_text_match:desc,ranking:desc',
+      const searchResults = await client.collections("videos").documents().search({
+        q: "*",
+        filter_by: `objectID:=${videoId}`,
+        per_page: 1,
       })
 
-      if (filterString) {
-        searchParams.set('filter_by', filterString)
+      if (searchResults.hits && searchResults.hits.length > 0) {
+        console.log("Found video by objectID:", searchResults.hits[0].document)
+        return searchResults.hits[0].document as VideoHit
       }
-
-      const response = await fetch(`${this.baseUrl}/collections/videos/documents/search?${searchParams}`, {
-        headers: {
-          'X-TYPESENSE-API-KEY': this.apiKey,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        return (data.hits || []).map((hit: any) => hit.document as VideoHit)
-      }
-
-      return []
-    } catch (error) {
-      console.error('Failed to search videos:', error)
-      return []
+    } catch {
+      console.warn("Search by 'objectID' failed, trying direct fetch")
     }
-  }
 
-  isConfigured(): boolean {
-    return !!(this.apiKey && this.baseUrl && this.baseUrl !== 'https://')
+    // Last resort: direct document fetch
+    try {
+      const document = await client.collections("videos").documents(videoId).retrieve()
+      console.log("Found video by direct fetch:", document)
+      return document as VideoHit
+    } catch {
+      console.warn("Direct fetch failed")
+    }
+
+    console.log(`No video found with ID: ${videoId}`)
+    return null
+  } catch (error) {
+    console.error("Error finding video by ID:", error)
+    return null
   }
 }
 
-export const typesenseService = new TypesenseService()
+export async function searchVideos(
+  query: string,
+  filters: Record<string, string[]> = {}
+): Promise<VideoHit[]> {
+  try {
+    if (!isConfigured()) {
+      console.warn("Typesense not configured")
+      return []
+    }
+
+    // Build filter string
+    const filterParts = Object.entries(filters)
+      .filter(([_, values]) => values.length > 0)
+      .map(([key, values]) =>
+        values.length === 1 ? `${key}:=${values[0]}` : `${key}:[${values.join(",")}]`
+      )
+    const filterBy = filterParts.join(" && ")
+
+    const searchParameters = {
+      q: query || "*",
+      query_by: "title,description,types,audiences,companies,topics,tags,people",
+      per_page: 20,
+      sort_by: "created_at:desc",
+      ...(filterBy ? { filter_by: filterBy } : {}),
+    }
+
+    console.log("Typesense search parameters:", searchParameters)
+
+    const searchResults = await client.collections("videos").documents().search(searchParameters)
+
+    return searchResults.hits?.map((hit: any) => hit.document) || []
+  } catch (error) {
+    console.error("Error searching videos:", error)
+    return []
+  }
+}
+
+// Utility functions for common search operations
+export async function searchVideosByCompany(company: string, limit: number = 10): Promise<VideoHit[]> {
+  return searchVideos('*', { companies: [company] })
+}
+
+export async function searchVideosByType(type: string, limit: number = 10): Promise<VideoHit[]> {
+  return searchVideos('*', { types: [type] })
+}
+
+export async function searchVideosByTopic(topic: string, limit: number = 10): Promise<VideoHit[]> {
+  return searchVideos('*', { topics: [topic] })
+}
+
+export async function searchVideosByPerson(person: string, limit: number = 10): Promise<VideoHit[]> {
+  return searchVideos('*', { people: [person] })
+}
+
+export async function getRecentVideos(limit: number = 20): Promise<VideoHit[]> {
+  try {
+    if (!isConfigured()) {
+      console.warn("Typesense not configured")
+      return []
+    }
+
+    const searchParameters = {
+      q: "*",
+      query_by: "title",
+      per_page: limit,
+      sort_by: "created_at:desc",
+      filter_by: "visibility:=public",
+    }
+
+    const searchResults = await client.collections("videos").documents().search(searchParameters)
+    return searchResults.hits?.map((hit: any) => hit.document) || []
+  } catch (error) {
+    console.error("Error fetching recent videos:", error)
+    return []
+  }
+}
+
+export async function getTrendingVideos(limit: number = 20): Promise<VideoHit[]> {
+  try {
+    if (!isConfigured()) {
+      console.warn("Typesense not configured")
+      return []
+    }
+
+    // For trending, we could sort by view count or engagement if those fields exist
+    // For now, we'll use recent videos as a fallback
+    const searchParameters = {
+      q: "*",
+      query_by: "title",
+      per_page: limit,
+      sort_by: "created_at:desc",
+      filter_by: "visibility:=public",
+    }
+
+    const searchResults = await client.collections("videos").documents().search(searchParameters)
+    return searchResults.hits?.map((hit: any) => hit.document) || []
+  } catch (error) {
+    console.error("Error fetching trending videos:", error)
+    return []
+  }
+}

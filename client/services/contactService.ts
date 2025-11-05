@@ -1,4 +1,4 @@
-import { apiClient } from '@client/services/apiClient'
+import { sendContactForm, validateEmail } from './api'
 
 export interface ContactFormData {
   name: string
@@ -9,49 +9,23 @@ export interface ContactFormData {
   videoId?: string
 }
 
-export interface ContactResponse {
-  success: boolean
-  message?: string
+// Simple contact functions
+export async function submitContactForm(formData: ContactFormData) {
+  // Basic validation
+  const missing = validateContactForm(formData)
+  if (missing.length > 0) {
+    throw new Error(`Missing required fields: ${missing.join(', ')}`)
+  }
+  
+  if (!validateEmail(formData.email)) {
+    throw new Error('Invalid email format')
+  }
+
+  return sendContactForm(formData)
 }
 
-class ContactService {
-  async submitContactForm(data: ContactFormData): Promise<ContactResponse> {
-    try {
-      const response = await apiClient.post<ContactResponse>('/api/contact', data)
-      return response
-    } catch (error) {
-      console.error('Failed to submit contact form:', error)
-      throw error
-    }
-  }
-
-  validateContactForm(data: ContactFormData): string[] {
-    const errors: string[] = []
-
-    if (!data.name?.trim()) {
-      errors.push('Name is required')
-    }
-
-    if (!data.email?.trim()) {
-      errors.push('Email is required')
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-      errors.push('Please enter a valid email address')
-    }
-
-    if (!data.company?.trim()) {
-      errors.push('Company is required')
-    }
-
-    if (!data.message?.trim()) {
-      errors.push('Message is required')
-    }
-
-    return errors
-  }
-
-  isContactFormValid(data: ContactFormData): boolean {
-    return this.validateContactForm(data).length === 0
-  }
+export function validateContactForm(data: ContactFormData): string[] {
+  const required: (keyof ContactFormData)[] = ['name', 'email', 'company', 'message']
+  return required.filter(field => !data[field]?.trim())
 }
 
-export const contactService = new ContactService()

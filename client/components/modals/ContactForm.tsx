@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { analyticsService } from '@client/services/analyticsService'
+import { trackContact } from '@client/services/analyticsService'
 import type { VideoHit } from '@client/components/types'
 
 interface ContactFormProps {
@@ -26,7 +26,7 @@ export default function ContactForm({ videoData, onClose, onSuccess }: ContactFo
     setError(null)
 
     try {
-      const success = await analyticsService.trackContactSubmit(videoData, message)
+      const success = await trackContact(videoData, message)
       
       if (success) {
         console.log('Contact form submitted successfully')

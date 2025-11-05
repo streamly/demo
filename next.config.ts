@@ -5,7 +5,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'img.syndinet.com',
+        hostname: process.env.NEXT_PUBLIC_IMAGE_HOST!,
+      },
+      {
+        protocol: 'http',
+        hostname: process.env.NEXT_PUBLIC_IMAGE_HOST!,
       },
     ],
   },

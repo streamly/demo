@@ -2,6 +2,140 @@
 @import "video.js/dist/video-js.css";
 
 @layer components {
+  /* Modern Uppy styling using data attributes */
+  
+  /* Dropzone container - responsive heights */
+  [data-uppy-element="dropzone"] {
+    @apply border-2 border-dashed border-gray-300 rounded-lg transition-colors;
+    @apply h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px];
+    @apply flex items-center justify-center p-4;
+  }
+  
+  /* Dropzone hover state */
+  [data-uppy-element="dropzone"]:hover {
+    @apply border-blue-400 bg-blue-50;
+  }
+  
+  /* Dropzone when dragging over */
+  [data-uppy-element="dropzone"][data-state="drag-over"] {
+    @apply border-blue-500 bg-blue-100;
+  }
+  
+  /* Dropzone inner content */
+  [data-uppy-element="dropzone"] > div {
+    @apply flex flex-col items-center justify-center w-full;
+    @apply space-y-2 sm:space-y-3 md:space-y-4;
+  }
+  
+  /* Dropzone label text */
+  [data-uppy-element="dropzone"] [data-uppy-element="label"] {
+    @apply font-medium text-gray-700 mb-1;
+    @apply text-base sm:text-lg md:text-xl;
+  }
+  
+  /* Dropzone note text */
+  [data-uppy-element="dropzone"] [data-uppy-element="note"] {
+    @apply text-gray-500 mb-2 text-center px-2 max-w-md mx-auto leading-relaxed;
+    @apply text-xs sm:text-sm md:text-base;
+  }
+  
+  /* Browse button */
+  [data-uppy-element="browse-button"] {
+    @apply text-blue-600 hover:text-blue-700 font-medium cursor-pointer underline;
+    @apply text-sm sm:text-base;
+  }
+  
+  /* Upload button states */
+  [data-uppy-element="upload-button"] {
+    @apply bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium;
+    @apply hover:bg-blue-700 transition-colors;
+  }
+  
+  [data-uppy-element="upload-button"][data-state="uploading"] {
+    @apply bg-blue-500 cursor-not-allowed;
+  }
+  
+  [data-uppy-element="upload-button"][data-state="disabled"] {
+    @apply bg-gray-400 cursor-not-allowed;
+  }
+  
+  /* File item states */
+  [data-uppy-element="file-item"][data-state="uploading"] {
+    @apply bg-blue-50 border-blue-200;
+  }
+  
+  [data-uppy-element="file-item"][data-state="complete"] {
+    @apply bg-green-50 border-green-200;
+  }
+  
+  [data-uppy-element="file-item"][data-state="error"] {
+    @apply bg-red-50 border-red-200;
+  }
+  
+  /* Uppy Button styles */
+  .uppy-c-btn {
+    @apply inline-flex items-center justify-center font-medium transition-colors duration-300 select-none whitespace-nowrap cursor-pointer;
+  }
+  
+  .uppy-c-btn-primary {
+    @apply bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium;
+  }
+  
+  .uppy-c-btn-primary:hover {
+    @apply bg-blue-700;
+  }
+  
+  .uppy-c-btn-primary:focus {
+    @apply outline-none ring-2 ring-blue-500/50;
+  }
+  
+  /* Uppy File List styles */
+  .uppy-Dashboard-files {
+    @apply space-y-2;
+  }
+  
+  .uppy-Dashboard-Item {
+    @apply bg-white border border-gray-200 rounded-lg p-4 flex items-center space-x-4;
+  }
+  
+  .uppy-Dashboard-Item-preview {
+    @apply w-16 h-16 bg-gray-100 rounded flex items-center justify-center;
+  }
+  
+  .uppy-Dashboard-Item-fileInfo {
+    @apply flex-1;
+  }
+  
+  .uppy-Dashboard-Item-name {
+    @apply font-medium text-gray-900 text-sm;
+  }
+  
+  .uppy-Dashboard-Item-status {
+    @apply text-xs text-gray-500 mt-1;
+  }
+  
+  /* Progress bar styles */
+  .uppy-Dashboard-Item-progress {
+    @apply w-full bg-gray-200 rounded-full h-2 mt-2;
+  }
+  
+  .uppy-Dashboard-Item-progressIndicator {
+    @apply bg-blue-600 h-2 rounded-full transition-all duration-300;
+  }
+  
+  /* Upload area styles */
+  .uppy-Dashboard-AddFiles {
+    @apply border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors;
+  }
+  
+  .uppy-Dashboard-AddFiles-title {
+    @apply text-lg font-medium text-gray-700 mb-2;
+  }
+  
+  .uppy-Dashboard-AddFiles-info {
+    @apply text-sm text-gray-500;
+  }
+
   /* Clean search box styles */
   .search-box .ais-SearchBox-form {
     @apply relative;
@@ -149,5 +283,58 @@
 
   .video-js .vjs-progress-control .vjs-load-progress {
     @apply bg-white/40;
+  }
+
+  /* Uppy Dashboard Styles */
+  .uppy-dashboard-container .uppy-Dashboard {
+    @apply border-0 rounded-none;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-inner {
+    @apply border-0;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-dropFilesHereHint {
+    @apply text-gray-600 text-base;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-AddFiles-title {
+    @apply text-gray-900 text-lg font-medium;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-note {
+    @apply text-gray-500 text-sm;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-browse {
+    @apply text-blue-600 hover:text-blue-700 font-medium;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-AddFiles {
+    @apply border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-AddFiles:hover {
+    @apply border-gray-400;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-AddFiles-info {
+    @apply text-gray-600;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-Item {
+    @apply border border-gray-200 rounded-lg;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-Item-preview {
+    @apply rounded-lg;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-Item-progress {
+    @apply bg-blue-600;
+  }
+
+  .uppy-dashboard-container .uppy-Dashboard-Item-progressIndicator {
+    @apply bg-blue-100;
   }
 }

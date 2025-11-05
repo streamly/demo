@@ -1,12 +1,12 @@
 export interface UserProfile {
-  firstname?: string
-  lastname?: string
+  givenName?: string
+  familyName?: string
   email?: string
   phone?: string
   position?: string
   company?: string
   industry?: string
-  url?: string
+  website?: string
 }
 
 export interface AuthUser {

@@ -1,67 +1,28 @@
 'use client'
-import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import {
-  Configure,
-  InstantSearch,
-  useInstantSearch,
-} from 'react-instantsearch'
-import TypesenseInstantSearchAdapter from 'typesense-instantsearch-adapter'
+import { useEffect, useState } from 'react'
+import { Configure } from 'react-instantsearch'
 
-import InfiniteScrollHits from '@client/components/search/InifiniteScrollHits'
-import JumbotronBanner from '@client/components/layout/JumbotronBanner'
-import SearchHeader from '@client/components/search/SearchHeader'
-import SidebarFilters from '@client/components/search/SidebarFilters'
-import VideoModal from '@client/components/video/VideoModal'
-import ProfileModal from '@client/components/modals/ProfileModal'
-import LoadingScreen from '@client/components/ui/LoadingScreen'
+import SearchHeader from '@/client/components/layout/Header'
 import { useAuth } from '@client/components/auth/AuthProvider'
-import { typesenseService } from '@client/services/typesenseService'
-import { urlService } from '@client/services/urlService'
-import type { VideoHit } from '@client/components/types'
-
-const typesenseAdapter = new TypesenseInstantSearchAdapter({
-  server: {
-    apiKey: process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY!,
-    nodes: [
-      {
-        host: process.env.NEXT_PUBLIC_TYPESENSE_HOST!,
-        port: 443,
-        protocol: 'https',
-      },
-    ],
-  },
-  additionalSearchParameters: {
-    query_by: 'title,description,company,tags',
-  },
-})
-
-const searchClient = typesenseAdapter.searchClient
+import JumbotronBanner from '@client/components/layout/JumbotronBanner'
+import ProfileModal from '@client/components/modals/ProfileModal'
+import InfiniteScrollHits from '@client/components/search/InifiniteScrollHits'
+import { SearchProvider, useSearch } from '@client/components/search/SearchProvider'
+import SidebarFilters from '@client/components/search/SidebarFilters'
+import SidebarFiltersSkeleton from '@client/components/search/SidebarFiltersSkeleton'
+import { InstantSearchWrapper, TypesenseSearchProvider, useTypesenseSearch } from '@client/components/search/TypesenseSearchProvider'
+import LoadingOverlay from '@client/components/ui/LoadingOverlay'
+import VideoManager from '@client/components/video/VideoManager'
+import VideoModal from '@client/components/video/VideoModal'
 
 function SearchLayout() {
-  const { indexUiState } = useInstantSearch()
   const { isAuthenticated, isLoading: authLoading, checkIfUserHasCompleteProfile } = useAuth()
+  const { showSearchMode, setIsSearchFocused } = useSearch()
+  const { isReady: searchReady } = useTypesenseSearch()
   const searchParams = useSearchParams()
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
-  const [hasEverSearched, setHasEverSearched] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState<VideoHit | null>(null)
-  const [isLoadingVideo, setIsLoadingVideo] = useState(false)
-  const [pendingVideoId, setPendingVideoId] = useState<string | null>(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
 
-  // Check if user has searched (has query or filters)
-  const hasSearched = !!(
-    indexUiState.query ||
-    indexUiState.refinementList ||
-    indexUiState.range ||
-    indexUiState.hierarchicalMenu
-  )
-
-  useEffect(() => {
-    if (hasSearched) {
-      setHasEverSearched(true)
-    }
-  }, [hasSearched])
 
   useEffect(() => {
     const shouldShowProfileModal = searchParams.get('showProfileModal') === 'true'
@@ -75,177 +36,65 @@ function SearchLayout() {
     }
   }, [searchParams, isAuthenticated, authLoading, checkIfUserHasCompleteProfile])
 
-  const handleSearchFocus = (focused: boolean) => {
-    setIsSearchFocused(focused)
-    if (focused) {
-      setHasEverSearched(true)
-    }
-  }
 
-  // Handle video ID from URL on page load - wait for auth to load first
-  useEffect(() => {
-    const videoId = urlService.getVideoIdFromUrl()
-    console.log('Initial URL check - videoId:', videoId, 'authLoading:', authLoading)
-    
-    if (videoId) {
-      if (authLoading) {
-        // Auth is still loading, store the video ID for later
-        console.log('Auth still loading, storing video ID:', videoId)
-        setPendingVideoId(videoId)
-      } else {
-        // Auth has loaded, process the video ID immediately
-        console.log('Auth already loaded, processing video ID now:', videoId)
-        loadVideoById(videoId)
-      }
-    } else {
-      console.log('No video ID in URL')
-    }
-  }, [authLoading])
-
-  // Process pending video ID when auth finishes loading
-  useEffect(() => {
-    console.log('Pending video check:', { authLoading, pendingVideoId })
-    if (!authLoading && pendingVideoId) {
-      console.log('Processing pending video ID:', pendingVideoId)
-      loadVideoById(pendingVideoId)
-      setPendingVideoId(null)
-    }
-  }, [authLoading, pendingVideoId])
-
-  const loadVideoById = async (videoId: string) => {
-    console.log('loadVideoById called with:', videoId)
-    console.log('Typesense configured:', typesenseService.isConfigured())
-    console.log('Auth state:', { isAuthenticated, authLoading, hasCompleteProfile: checkIfUserHasCompleteProfile() })
-
-    if (!typesenseService.isConfigured()) {
-      console.warn('Typesense not configured')
-      return
-    }
-
-    setIsLoadingVideo(true)
-    try {
-      console.log('Searching for video:', videoId)
-      const video = await typesenseService.findVideoById(videoId)
-      console.log('Video found:', video ? video.title : 'null')
-      
-      if (video) {
-        // Check if user is authenticated and has complete profile
-        if (!isAuthenticated) {
-          console.log('User not authenticated, setting video (will trigger auth flow)')
-          setSelectedVideo(video)
-        } else if (!checkIfUserHasCompleteProfile()) {
-          console.log('User profile incomplete, setting video (will redirect to profile)')
-          setSelectedVideo(video) // This will trigger the profile redirect in VideoModal
-        } else {
-          console.log('User authenticated with complete profile, setting video')
-          setSelectedVideo(video)
-        }
-        console.log('selectedVideo state will be set to:', video.title)
-      } else {
-        console.warn('Video not found:', videoId)
-        urlService.removeVideoId()
-      }
-    } catch (error) {
-      console.error('Failed to load video from URL:', error)
-      urlService.removeVideoId()
-    } finally {
-      setIsLoadingVideo(false)
-      console.log('Loading finished')
-    }
-  }
-
-  // Listen for browser navigation (back/forward)
-  useEffect(() => {
-    const cleanup = urlService.onUrlChange(async (videoId) => {
-      if (videoId && !authLoading) {
-        // Only process if auth has finished loading
-        loadVideoById(videoId)
-      } else if (!videoId) {
-        setSelectedVideo(null)
-      }
-    })
-
-    return cleanup
-  }, [authLoading])
-
-  // Handle video selection from search results
-  const handleVideoSelect = (video: VideoHit) => {
-    setSelectedVideo(video)
-    urlService.setVideoId(video.id)
-  }
-
-  // Handle video modal close
-  const handleVideoClose = () => {
-    setSelectedVideo(null)
-    urlService.removeVideoId()
-  }
-
-  // Show search mode when focused OR when user has searched OR has ever searched
-  const showSearchMode = isSearchFocused || hasSearched || hasEverSearched
 
   return (
-    <div className="min-h-screen">
-      <SearchHeader 
-        onSearchFocus={handleSearchFocus} 
-        onProfileModalOpen={() => setShowProfileModal(true)}
-      />
+    <VideoManager>
+      {({ selectedVideo, isLoadingVideo, handleVideoSelect, handleVideoClose }) => (
+        <div className="min-h-screen">
+          <SearchHeader
+            onSearchFocus={setIsSearchFocused}
+            onProfileModalOpen={() => setShowProfileModal(true)}
+          />
 
-      {/* Page Content Loader - show while auth is loading */}
-      {authLoading ? (
-        <LoadingScreen 
-          title="Loading Bizilla Videos"
-          subtitle="Please wait while we initialize the application..."
-        />
-      ) : (
-        <>
-          {/* Jumbotron Banner - show when not in search mode */}
-          {!showSearchMode && <JumbotronBanner />}
+          {/* Jumbotron Banner - show only after auth loads, when not in search mode AND user is not authenticated */}
+          {!showSearchMode && !authLoading && !isAuthenticated && <JumbotronBanner />}
 
           <div className="flex">
-            {/* Sidebar Filters - show when in search mode */}
-            {showSearchMode && <SidebarFilters />}
+            {/* Sidebar Filters - show for authenticated users (or during auth loading), or when in search mode for non-authenticated */}
+            {(isAuthenticated || showSearchMode || authLoading) && (
+              (authLoading || !searchReady) ? <SidebarFiltersSkeleton /> : <SidebarFilters />
+            )}
 
-            <main className={`flex-1 p-6 ${!showSearchMode ? 'max-w-7xl mx-auto' : 'ml-64'}`}>
+            <main className={`flex-1 p-6 max-w-7xl mx-auto ${(isAuthenticated || showSearchMode || authLoading) ? 'lg:ml-64' : ''}`}>
               <InfiniteScrollHits onVideoSelect={handleVideoSelect} />
             </main>
           </div>
-        </>
-      )}
 
-      {/* Video Modal */}
-      {selectedVideo && (
-        <>
-          {console.log('Rendering VideoModal for:', selectedVideo.title)}
-          <VideoModal hit={selectedVideo} onClose={handleVideoClose} />
-        </>
-      )}
+          {/* Video Modal */}
+          {selectedVideo && (
+            <>
+              {console.log('Rendering VideoModal for:', selectedVideo.title)}
+              <VideoModal hit={selectedVideo} onClose={handleVideoClose} />
+            </>
+          )}
 
-      {/* Profile Modal */}
-      <ProfileModal 
-        isOpen={showProfileModal} 
-        onClose={() => setShowProfileModal(false)} 
-      />
+          {/* Profile Modal */}
+          <ProfileModal
+            isOpen={showProfileModal}
+            onClose={() => setShowProfileModal(false)}
+          />
 
-      {/* Loading State */}
-      {(isLoadingVideo || (authLoading && pendingVideoId)) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span className="text-gray-700">
-              {authLoading && pendingVideoId ? 'Initializing...' : 'Loading video...'}
-            </span>
-          </div>
+          {/* Loading Overlay for video loading */}
+          <LoadingOverlay
+            isVisible={isLoadingVideo}
+            message="Loading video..."
+          />
         </div>
       )}
-    </div>
+    </VideoManager>
   )
 }
 
 export default function Page() {
   return (
-    <InstantSearch indexName="videos" searchClient={searchClient}>
-      <Configure hitsPerPage={12} />
-      <SearchLayout />
-    </InstantSearch>
+    <TypesenseSearchProvider autoInitialize={true}>
+      <InstantSearchWrapper indexName="videos">
+        <Configure hitsPerPage={12} />
+        <SearchProvider>
+          <SearchLayout />
+        </SearchProvider>
+      </InstantSearchWrapper>
+    </TypesenseSearchProvider>
   )
 }

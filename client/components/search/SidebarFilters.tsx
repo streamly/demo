@@ -1,6 +1,6 @@
 'use client'
-import { useState, useCallback } from 'react'
-import { RefinementList, useClearRefinements } from 'react-instantsearch'
+import { useState, useCallback, useEffect } from 'react'
+import { RefinementList, RangeInput, useClearRefinements, useRange } from 'react-instantsearch'
 
 export default function SidebarFilters() {
     const [filterSearch, setFilterSearch] = useState('')
@@ -52,35 +52,67 @@ export default function SidebarFilters() {
                     </div>
                 </div>
 
+                {/* Most Important Filters - Top Priority */}
+                <FilterSection
+                    title="Companies"
+                    attribute="companies"
+                    searchQuery={filterSearch}
+                />
+
+                <div className="my-6 border-t border-gray-200" />
+
+                <FilterSection
+                    title="Type"
+                    attribute="types"
+                    searchQuery={filterSearch}
+                />
+
+                <div className="my-6 border-t border-gray-200" />
+
+                <DurationFilter />
+
+                <div className="my-6 border-t border-gray-200" />
+
+                {/* Secondary Filters - Content-based */}
+                <FilterSection
+                    title="Topics"
+                    attribute="topics"
+                    searchQuery={filterSearch}
+                />
+
+                <div className="my-6 border-t border-gray-200" />
+
+                <FilterSection
+                    title="Audiences"
+                    attribute="audiences"
+                    searchQuery={filterSearch}
+                />
+
+                <div className="my-6 border-t border-gray-200" />
+
+                <FilterSection
+                    title="People"
+                    attribute="people"
+                    searchQuery={filterSearch}
+                />
+
+                <div className="my-6 border-t border-gray-200" />
+
+                {/* Less Important Filters - Bottom */}
+                <FilterSection
+                    title="Tags"
+                    attribute="tags"
+                    searchQuery={filterSearch}
+                />
+
+                <div className="my-6 border-t border-gray-200" />
+
                 <FilterSection
                     title="Format"
                     attribute="format"
                     searchQuery={filterSearch}
                 />
 
-                <div className="my-6 border-t border-gray-200" />
-
-                <FilterSection
-                    title="Company"
-                    attribute="company"
-                    searchQuery={filterSearch}
-                />
-
-                <div className="my-6 border-t border-gray-200" />
-
-                <FilterSection
-                    title="Duration"
-                    attribute="duration"
-                    searchQuery={filterSearch}
-                />
-
-                <div className="my-6 border-t border-gray-200" />
-
-                <FilterSection
-                    title="Date Added"
-                    attribute="date_added"
-                    searchQuery={filterSearch}
-                />
             </div>
         </aside>
     )
@@ -117,6 +149,140 @@ function FilterSection({
                     showMore: 'mt-2 text-xs text-blue-600 hover:text-blue-800 cursor-pointer',
                 }}
             />
+        </div>
+    )
+}
+
+function DurationFilter() {
+    const { range, start, refine, canRefine } = useRange({ attribute: 'duration' })
+    const [localMin, setLocalMin] = useState<string>('')
+    const [localMax, setLocalMax] = useState<string>('')
+    const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null)
+
+    // Update local state when range changes externally
+    useEffect(() => {
+        if (start && start.length === 2) {
+            // Convert seconds to minutes for display
+            setLocalMin(start[0] ? (start[0] / 60).toString() : '')
+            setLocalMax(start[1] ? (start[1] / 60).toString() : '')
+        }
+    }, [start])
+
+    const applyRange = useCallback((min: number | undefined, max: number | undefined) => {
+        if (canRefine) {
+            refine([min, max])
+        }
+    }, [canRefine, refine])
+
+    const debouncedRefine = useCallback((min: string, max: string) => {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer)
+        }
+
+        const timer = setTimeout(() => {
+            // Convert minutes to seconds for the search
+            const minVal = min ? parseInt(min) * 60 : undefined
+            const maxVal = max ? parseInt(max) * 60 : undefined
+            applyRange(minVal, maxVal)
+        }, 400)
+
+        setDebounceTimer(timer)
+    }, [debounceTimer, applyRange])
+
+    const handleMinChange = (value: string) => {
+        setLocalMin(value)
+        debouncedRefine(value, localMax)
+    }
+
+    const handleMaxChange = (value: string) => {
+        setLocalMax(value)
+        debouncedRefine(localMin, value)
+    }
+
+    const handlePresetClick = (min: number | undefined, max: number | undefined) => {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer)
+        }
+        applyRange(min, max)
+        // Convert seconds to minutes for display
+        setLocalMin(min ? (min / 60).toString() : '')
+        setLocalMax(max ? (max / 60).toString() : '')
+    }
+
+    const clearFilter = () => {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer)
+        }
+        applyRange(undefined, undefined)
+        setLocalMin('')
+        setLocalMax('')
+    }
+
+    return (
+        <div>
+            <h3 className="mb-3 text-sm font-medium text-gray-900">Duration</h3>
+            
+            {/* Preset buttons */}
+            <div className="space-y-2 mb-4">
+                <button
+                    onClick={() => handlePresetClick(undefined, 300)}
+                    className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+                >
+                    Under 5 min
+                </button>
+                <button
+                    onClick={() => handlePresetClick(300, 900)}
+                    className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+                >
+                    5 – 15 min
+                </button>
+                <button
+                    onClick={() => handlePresetClick(900, 3600)}
+                    className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+                >
+                    15 – 60 min
+                </button>
+                <button
+                    onClick={() => handlePresetClick(3600, undefined)}
+                    className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+                >
+                    Over 60 min
+                </button>
+            </div>
+
+            {/* Custom range inputs */}
+            <div className="border-t border-gray-200 pt-3">
+                <div className="text-xs text-gray-600 mb-2">Custom range (minutes):</div>
+                <div className="flex gap-2 items-center">
+                    <input
+                        type="number"
+                        value={localMin}
+                        onChange={(e) => handleMinChange(e.target.value)}
+                        placeholder="Min"
+                        min="0"
+                        step="1"
+                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <span className="text-gray-500 text-sm">to</span>
+                    <input
+                        type="number"
+                        value={localMax}
+                        onChange={(e) => handleMaxChange(e.target.value)}
+                        placeholder="Max"
+                        min="0"
+                        step="1"
+                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                </div>
+                {(localMin || localMax) && (
+                    <button
+                        onClick={clearFilter}
+                        className="mt-2 text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
+                    >
+                        Clear range
+                    </button>
+                )}
+            </div>
         </div>
     )
 }

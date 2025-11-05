@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
 import { newRelicService } from '@client/services/newRelicService'
-import { analyticsService } from '@client/services/analyticsService'
+import { trackVideo } from '@client/services/analyticsService'
 import { useAuth } from '@client/components/auth/AuthProvider'
 import type { VideoHit } from '@client/components/types'
 
@@ -89,9 +89,9 @@ export default function VideoPlayer({ videoId, videoData, onReady }: VideoPlayer
         console.log('Video started playing')
         
         // Track video play event
-        if (videoData && await analyticsService.canTrack()) {
+        if (videoData) {
           try {
-            await analyticsService.trackVideoPlayWithRetry(videoData)
+            await trackVideo(videoData)
           } catch (error) {
             console.warn('Failed to track video play:', error)
           }

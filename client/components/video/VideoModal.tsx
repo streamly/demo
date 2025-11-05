@@ -1,8 +1,9 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { VideoHit } from '@client/components/types'
 import VideoPlayer from '@client/components/video/VideoPlayer'
+import Modal from '@client/components/ui/Modal'
 import { useAuth } from '@client/components/auth/AuthProvider'
 
 interface VideoModalProps {
@@ -13,9 +14,6 @@ interface VideoModalProps {
 export default function VideoModal({ hit, onClose }: VideoModalProps) {
     const router = useRouter()
     const { isAuthenticated, checkIfUserHasCompleteProfile } = useAuth()
-    const modalRef = useRef<HTMLDivElement | null>(null)
-    const [isVisible, setIsVisible] = useState(false)
-    const [isClosing, setIsClosing] = useState(false)
     const [contactMessage, setContactMessage] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -28,34 +26,7 @@ export default function VideoModal({ hit, onClose }: VideoModalProps) {
             router.push('/profile?reason=video-access')
             return
         }
-        setIsVisible(true)
     }, [isAuthenticated, checkIfUserHasCompleteProfile, onClose, router])
-
-    // Handle close with animation
-    const handleClose = () => {
-        setIsClosing(true)
-        setTimeout(() => {
-            onClose()
-        }, 200) // Match animation duration
-    }
-
-    // Close on ESC key
-    useEffect(() => {
-        const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && handleClose()
-        window.addEventListener('keydown', onEsc)
-        return () => window.removeEventListener('keydown', onEsc)
-    }, [])
-
-    // Close on click outside
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
-                handleClose()
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
 
     // Handle contact form submission
     const handleContactSubmit = async (e: React.FormEvent) => {
@@ -133,31 +104,21 @@ export default function VideoModal({ hit, onClose }: VideoModalProps) {
     const channels = Array.isArray(hit.channel) ? hit.channel : []
 
     return (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-2 sm:px-4 py-2 sm:py-6 transition-opacity duration-200 ${
-            isVisible && !isClosing ? 'opacity-100' : 'opacity-0'
-        }`}>
-            <div
-                ref={modalRef}
-                className={`relative w-full max-w-7xl min-h-[90vh] sm:min-h-[60vh] max-h-[95vh] sm:max-h-[85vh] overflow-hidden rounded-none sm:rounded-lg border-0 sm:border border-gray-200 bg-white shadow-2xl transition-all duration-200 flex flex-col ${
-                    isVisible && !isClosing 
-                        ? 'opacity-100 scale-100 translate-y-0' 
-                        : 'opacity-0 scale-95 translate-y-4'
-                }`}
-            >
-                <button
-                    onClick={handleClose}
-                    className="absolute right-2 sm:right-4 top-2 sm:top-4 z-10 flex h-10 w-10 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors touch-manipulation"
-                >
-                    <span className="text-xl sm:text-lg leading-none">&times;</span>
-                </button>
-
-                <div className="aspect-video bg-black flex-shrink-0">
-                    <VideoPlayer
-                        videoId={hit.id}
-                        videoData={hit}
-                        onReady={() => console.log('Video player ready for', hit.id)}
-                    />
-                </div>
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            maxWidth="7xl"
+            fullScreen={true}
+            backdrop="blur"
+            showCloseButton={true}
+        >
+            <div className="aspect-video bg-black flex-shrink-0">
+                <VideoPlayer
+                    videoId={hit.id}
+                    videoData={hit}
+                    onReady={() => console.log('Video player ready for', hit.id)}
+                />
+            </div>
 
                 <div className="flex-1 overflow-y-auto border-t border-gray-200 bg-white p-3 sm:p-6 min-h-0 max-h-full">
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-8">
@@ -321,7 +282,6 @@ export default function VideoModal({ hit, onClose }: VideoModalProps) {
                         </form>
                     </div>
                 </div>
-            </div>
-        </div>
+        </Modal>
     )
 }

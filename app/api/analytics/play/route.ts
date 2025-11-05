@@ -1,8 +1,8 @@
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
+import { getVideoById, getVideoByObjectId } from '@/server/typesenseClient'
 import { getUserInfoFromAuthgear, verifyAuthgearUser } from '@server/authgearClient'
 import { pushToList, setAnalyticsData, setExpire } from '@server/redisClient'
-import { getVideoById, getVideoByObjectId } from '@server/typesense'
+import { createHash, randomUUID } from 'crypto'
+import { NextRequest, NextResponse } from 'next/server'
 
 interface VideoPlayActionData {
   uuid: string
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify Authgear token
     const authHeader = request.headers.get('authorization')
-    const jwtPayload = await verifyAuthgearUser(authHeader || undefined)
+    await verifyAuthgearUser(authHeader || undefined)
     const token = authHeader!.slice("Bearer ".length).trim()
 
     const body = await request.json()

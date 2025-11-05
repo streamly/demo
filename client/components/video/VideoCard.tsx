@@ -2,6 +2,7 @@
 import Image from 'next/image'
 import { useAuth } from '@client/components/auth/AuthProvider'
 import type { VideoHit } from '@client/components/types'
+import { getVideoThumbnail } from '@client/utils/thumbnailUtils'
 
 interface VideoCardProps {
     hit: VideoHit
@@ -14,7 +15,10 @@ export default function VideoCard({ hit, onVideoSelect }: VideoCardProps) {
     const formattedDuration =
         typeof hit.duration === 'number' ? formatDuration(hit.duration) : null
     const description = hit.description?.trim()
-    const company = hit.company?.trim().length ? hit.company : 'Bizilla'
+    // Use new companies array or fallback to legacy company field
+    const company = hit.companies?.[0] || hit.company?.trim() || 'Bizilla'
+    // Get the primary type/category
+    const primaryType = hit.types?.[0]
 
     const handleCardClick = () => {
         // Don't allow clicks while auth is loading
@@ -50,7 +54,7 @@ export default function VideoCard({ hit, onVideoSelect }: VideoCardProps) {
             >
                 <div className="relative aspect-video overflow-hidden">
                     <Image
-                        src={`https://img.syndinet.com/${hit.id}`}
+                        src={getVideoThumbnail(hit.id)}
                         alt={hit.title}
                         fill
                         sizes="(min-width: 1536px) 330px, (min-width: 1280px) 28vw, (min-width: 1024px) 30vw, (min-width: 768px) 45vw, 90vw"
@@ -70,6 +74,19 @@ export default function VideoCard({ hit, onVideoSelect }: VideoCardProps) {
                     <h3 className="line-clamp-2 text-base font-semibold text-gray-900">
                         {hit.title}
                     </h3>
+                    
+                    {/* Company and Type info */}
+                    <div className="mt-1 flex items-center space-x-2 text-sm text-gray-500">
+                        <span>{company}</span>
+                        {primaryType && (
+                            <>
+                                <span>•</span>
+                                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
+                                    {primaryType}
+                                </span>
+                            </>
+                        )}
+                    </div>
                     
                     {description && (
                         <p className="mt-2 line-clamp-2 text-sm text-gray-600">{description}</p>

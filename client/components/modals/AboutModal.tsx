@@ -1,7 +1,6 @@
 'use client'
-import Image from 'next/image'
 import Modal from '@client/components/ui/Modal'
-import Button from '@client/components/ui/Button'
+import Image from 'next/image'
 
 interface AboutModalProps {
   isOpen: boolean
@@ -10,11 +9,12 @@ interface AboutModalProps {
 
 export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       maxWidth="md"
-      showCloseButton={false}
+      backdrop="blur"
+      showCloseButton={true}
     >
       <div className="text-center">
         <div className="flex justify-center mb-6">
@@ -26,21 +26,17 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             className="w-16 h-16"
           />
         </div>
-        
+
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
           Bizilla Videos
         </h2>
-        
+
         <p className="text-gray-600 mb-6 leading-relaxed">
-          Stream free live events and on-demand videos from leading companies, 
-          thought leaders, and business experts. Discover launch stories, 
-          investor updates, and product explainers from innovative companies 
+          Stream free live events and on-demand videos from leading companies,
+          thought leaders, and business experts. Discover launch stories,
+          investor updates, and product explainers from innovative companies
           in the Bizilla network.
         </p>
-        
-        <Button onClick={onClose}>
-          Close
-        </Button>
       </div>
     </Modal>
   )

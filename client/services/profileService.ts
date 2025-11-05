@@ -1,71 +1,45 @@
-import { apiClient } from '@client/services/apiClient'
 import { UserProfile } from '@client/types/profile'
+import { updateProfile, getProfile, getRequiredFields } from './api'
 
-export interface ProfileUpdateResponse {
-  success: boolean
-  message?: string
+// Simple profile functions - no classes needed!
+
+export async function saveProfile(profileData: UserProfile) {
+  // Basic validation
+  const missingFields = getRequiredFields(profileData)
+  if (missingFields.length > 0) {
+    throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
+  }
+
+  return updateProfile(profileData)
 }
 
-export interface ProfileValidationError {
-  error: string
-  details?: any
+export async function fetchProfile(): Promise<UserProfile | null> {
+  return getProfile() as Promise<UserProfile | null>
 }
 
-class ProfileService {
-  async updateProfile(profileData: UserProfile): Promise<ProfileUpdateResponse> {
-    try {
-      const response = await apiClient.post<ProfileUpdateResponse>('/api/profile', profileData)
-      return response
-    } catch (error) {
-      console.error('Failed to update profile:', error)
-      throw error
-    }
-  }
-
-  async getProfile(): Promise<UserProfile | null> {
-    try {
-      const response = await apiClient.get<UserProfile>('/api/profile')
-      return response
-    } catch (error) {
-      console.error('Failed to get profile:', error)
-      return null
-    }
-  }
-
-  validateProfileData(data: UserProfile): string[] {
-    const requiredFields: (keyof UserProfile)[] = [
-      'firstname',
-      'lastname',
-      'email',
-      'phone',
-      'position',
-      'company',
-      'industry'
-    ]
-
-    return requiredFields.filter(field => {
-      const value = data[field]
-      return !value || (typeof value === 'string' && value.trim() === '')
-    })
-  }
-
-  isProfileComplete(profile: UserProfile): boolean {
-    return this.validateProfileData(profile).length === 0
-  }
-
-  getMissingFieldLabels(missingFields: string[]): string[] {
-    const fieldLabels: { [key: string]: string } = {
-      firstname: 'First Name',
-      lastname: 'Last Name',
-      email: 'Email',
-      phone: 'Phone',
-      position: 'Title / Position',
-      company: 'Company / Organization',
-      industry: 'Industry'
-    }
-
-    return missingFields.map(field => fieldLabels[field] || field)
-  }
+export function validateProfileData(data: UserProfile): string[] {
+  const required: (keyof UserProfile)[] = ['givenName', 'familyName', 'email', 'phone', 'position', 'company', 'industry']
+  return required.filter(field => {
+    const value = data[field]
+    return !value || (typeof value === 'string' && value.trim() === '')
+  })
 }
 
-export const profileService = new ProfileService()
+export function isProfileComplete(profile: UserProfile): boolean {
+  return validateProfileData(profile).length === 0
+}
+
+export function getMissingFieldLabels(missingFields: string[]): string[] {
+  const labels: { [key: string]: string } = {
+    givenName: 'First Name',
+    familyName: 'Last Name',
+    email: 'Email',
+    phone: 'Phone',
+    position: 'Title / Position',
+    company: 'Company / Organization',
+    industry: 'Industry',
+    website: 'Website URL'
+  }
+  return missingFields.map(field => labels[field] || field)
+}
+

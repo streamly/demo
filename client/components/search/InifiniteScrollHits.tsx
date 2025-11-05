@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useInfiniteHits, useInstantSearch } from 'react-instantsearch'
 import VideoCard from '@client/components/video/VideoCard'
 import LoadingSpinner from '@client/components/ui/LoadingSpinner'
+import MainPageVideoSkeleton from '@client/components/search/MainPageVideoSkeleton'
 import type { VideoHit } from '@client/components/types'
 
 interface InfiniteScrollHitsProps {
@@ -15,12 +16,29 @@ export default function InfiniteScrollHits({ onVideoSelect }: InfiniteScrollHits
     const sentinelRef = useRef<HTMLDivElement | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [hasTriggeredLoad, setHasTriggeredLoad] = useState(false)
+    const [isInitialLoading, setIsInitialLoading] = useState(true)
 
     // Reset loading state when search changes
     useEffect(() => {
         setIsLoading(false)
         setHasTriggeredLoad(false)
+        setIsInitialLoading(true)
     }, [indexUiState.query, indexUiState.refinementList])
+
+    // Track initial loading state
+    useEffect(() => {
+        // Consider loaded after first render with items or after a short delay
+        const timer = setTimeout(() => {
+            setIsInitialLoading(false)
+        }, 1500)
+
+        if (items.length > 0) {
+            setIsInitialLoading(false)
+            clearTimeout(timer)
+        }
+
+        return () => clearTimeout(timer)
+    }, [items.length])
 
     useEffect(() => {
         const el = sentinelRef.current
@@ -56,6 +74,11 @@ export default function InfiniteScrollHits({ onVideoSelect }: InfiniteScrollHits
             setHasTriggeredLoad(false)
         }
     }, [items.length])
+
+    // Show skeleton loading for initial load
+    if (isInitialLoading) {
+        return <MainPageVideoSkeleton count={12} />
+    }
 
     if (items.length === 0) {
         return (

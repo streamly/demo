@@ -1,11 +1,11 @@
 'use client'
-import { useState, useEffect } from 'react'
 import { useAuth } from '@client/components/auth/AuthProvider'
-import Modal from '@client/components/ui/Modal'
-import Button from '@client/components/ui/Button'
 import Alert from '@client/components/ui/Alert'
+import Button from '@client/components/ui/Button'
 import { InputField, SelectField } from '@client/components/ui/FormField'
+import Modal from '@client/components/ui/Modal'
 import { INDUSTRY_OPTIONS, MESSAGES } from '@client/constants'
+import { useEffect, useState } from 'react'
 
 interface ProfileModalProps {
   isOpen: boolean
@@ -30,14 +30,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   useEffect(() => {
     if (isOpen && userProfile) {
       setFormData({
-        firstname: userProfile.firstname || '',
-        lastname: userProfile.lastname || '',
+        firstname: userProfile.givenName || '',
+        lastname: userProfile.familyName || '',
         email: userProfile.email || '',
         phone: userProfile.phone || '',
         position: userProfile.position || '',
         company: userProfile.company || '',
         industry: userProfile.industry || '',
-        url: userProfile.url || ''
+        url: userProfile.website || ''
       })
     }
   }, [isOpen, userProfile])
@@ -71,134 +71,134 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const hasIncompleteProfile = missingFields.length > 0
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       title="Edit Profile"
       maxWidth="2xl"
-      backdrop="light"
+      backdrop="blur"
     >
 
-          {hasIncompleteProfile && (
-            <Alert 
-              variant="info" 
-              title={MESSAGES.PROFILE.COMPLETE_TITLE}
-              className="mb-6"
-            >
-              {MESSAGES.PROFILE.COMPLETE_MESSAGE}
-            </Alert>
-          )}
+      {hasIncompleteProfile && (
+        <Alert
+          variant="info"
+          title={MESSAGES.PROFILE.COMPLETE_TITLE}
+          className="mb-6"
+        >
+          {MESSAGES.PROFILE.COMPLETE_MESSAGE}
+        </Alert>
+      )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                label="First Name"
-                id="firstname"
-                name="firstname"
-                value={formData.firstname}
-                onChange={handleChange}
-                required
-              />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InputField
+            label="First Name"
+            id="firstname"
+            name="firstname"
+            value={formData.firstname}
+            onChange={handleChange}
+            required
+          />
 
-              <InputField
-                label="Last Name"
-                id="lastname"
-                name="lastname"
-                value={formData.lastname}
-                onChange={handleChange}
-                required
-              />
-            </div>
+          <InputField
+            label="Last Name"
+            id="lastname"
+            name="lastname"
+            value={formData.lastname}
+            onChange={handleChange}
+            required
+          />
+        </div>
 
-            <InputField
-              label="Email"
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              disabled
-              className="opacity-60"
-            />
+        <InputField
+          label="Email"
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          disabled
+          className="opacity-60"
+        />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                label="Phone"
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-              />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InputField
+            label="Phone"
+            type="tel"
+            id="phone"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            required
+          />
 
-              <InputField
-                label="Title / Position"
-                id="position"
-                name="position"
-                value={formData.position}
-                onChange={handleChange}
-                required
-              />
-            </div>
+          <InputField
+            label="Title / Position"
+            id="position"
+            name="position"
+            value={formData.position}
+            onChange={handleChange}
+            required
+          />
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                label="Company / Organization"
-                id="company"
-                name="company"
-                value={formData.company}
-                onChange={handleChange}
-                required
-              />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InputField
+            label="Company / Organization"
+            id="company"
+            name="company"
+            value={formData.company}
+            onChange={handleChange}
+            required
+          />
 
-              <SelectField
-                label="Industry"
-                id="industry"
-                name="industry"
-                value={formData.industry}
-                onChange={handleChange}
-                options={INDUSTRY_OPTIONS}
-                placeholder="Select an industry"
-                required
-              />
-            </div>
+          <SelectField
+            label="Industry"
+            id="industry"
+            name="industry"
+            value={formData.industry}
+            onChange={handleChange}
+            options={INDUSTRY_OPTIONS}
+            placeholder="Select an industry"
+            required
+          />
+        </div>
 
-            <InputField
-              label="Website URL"
-              type="url"
-              id="url"
-              name="url"
-              value={formData.url}
-              onChange={handleChange}
-              placeholder="https://example.com"
-            />
+        <InputField
+          label="Website URL"
+          type="url"
+          id="url"
+          name="url"
+          value={formData.url}
+          onChange={handleChange}
+          placeholder="https://example.com"
+        />
 
-            <div className="flex justify-end gap-3 pt-6">
-              <Button variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                isLoading={isSubmitting}
-                disabled={isSubmitting}
-              >
-                Save Profile
-              </Button>
-            </div>
+        <div className="flex justify-end gap-3 pt-6">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            isLoading={isSubmitting}
+            disabled={isSubmitting}
+          >
+            Save Profile
+          </Button>
+        </div>
 
-            {submitStatus === 'success' && (
-              <div className="text-green-600 text-sm text-center">
-                {MESSAGES.PROFILE.UPDATE_SUCCESS}
-              </div>
-            )}
+        {submitStatus === 'success' && (
+          <div className="text-green-600 text-sm text-center">
+            {MESSAGES.PROFILE.UPDATE_SUCCESS}
+          </div>
+        )}
 
-            {submitStatus === 'error' && (
-              <div className="text-red-600 text-sm text-center">
-                {MESSAGES.PROFILE.UPDATE_ERROR}
-              </div>
-            )}
-          </form>
+        {submitStatus === 'error' && (
+          <div className="text-red-600 text-sm text-center">
+            {MESSAGES.PROFILE.UPDATE_ERROR}
+          </div>
+        )}
+      </form>
     </Modal>
   )
 }
