@@ -1,4 +1,4 @@
-import { UserProfile } from '@client/types/profile'
+import { UserProfile } from '@/shared/types/user'
 import { updateProfile, getProfile, getRequiredFields } from './api'
 
 // Simple profile functions - no classes needed!
@@ -18,11 +18,44 @@ export async function fetchProfile(): Promise<UserProfile | null> {
 }
 
 export function validateProfileData(data: UserProfile): string[] {
-  const required: (keyof UserProfile)[] = ['givenName', 'familyName', 'email', 'phone', 'position', 'company', 'industry']
-  return required.filter(field => {
-    const value = data[field]
-    return !value || (typeof value === 'string' && value.trim() === '')
-  })
+  const errors: string[] = []
+  
+  // Required fields with length validation (matching backend schema)
+  const requiredFields = {
+    givenName: { label: 'First Name', maxLength: 100 },
+    familyName: { label: 'Last Name', maxLength: 100 },
+    position: { label: 'Title / Position', maxLength: 100 },
+    company: { label: 'Company / Organization', maxLength: 100 },
+    industry: { label: 'Industry', maxLength: 100 },
+    phone: { label: 'Phone', maxLength: null },
+    email: { label: 'Email', maxLength: null }
+  }
+  
+  for (const [field, config] of Object.entries(requiredFields)) {
+    const value = data[field as keyof UserProfile]
+    const trimmedValue = typeof value === 'string' ? value.trim() : ''
+    
+    if (!trimmedValue) {
+      errors.push(field)
+    } else if (config.maxLength && trimmedValue.length > config.maxLength) {
+      errors.push(`${field}_too_long`)
+    }
+  }
+  
+  // Website validation (optional but must be valid URL if provided)
+  if (data.website && data.website.trim()) {
+    const website = data.website.trim()
+    if (website.length > 255) {
+      errors.push('website_too_long')
+    }
+    try {
+      new URL(website)
+    } catch {
+      errors.push('website_invalid')
+    }
+  }
+  
+  return errors
 }
 
 export function isProfileComplete(profile: UserProfile): boolean {

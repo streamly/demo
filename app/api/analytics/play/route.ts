@@ -1,6 +1,6 @@
 import { getVideoById, getVideoByObjectId } from '@/server/typesenseClient'
 import { getUserInfoFromAuthgear, verifyAuthgearUser } from '@server/authgearClient'
-import { pushToList, setAnalyticsData, setExpire } from '@server/redisClient'
+// Redis client removed - analytics data will be handled differently
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     // Verify Authgear token
     const authHeader = request.headers.get('authorization')
     await verifyAuthgearUser(authHeader || undefined)
-    const token = authHeader!.slice("Bearer ".length).trim()
+    const token = authHeader!.slice('Bearer '.length).trim()
 
     const body = await request.json()
     const { videoId } = body
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       guid,
       aid: videoData.uid,
       videoId: videoData.id,
-      videoTitle: videoData.title,
+      videoTitle: videoData.title || 'Untitled Video',
       videoCompany: videoData.company || videoData.channel || '',
       gated: Boolean(videoData.gated),
       hostUrl: request.headers.get('origin') || '',
@@ -109,15 +109,13 @@ export async function POST(request: NextRequest) {
       actionData.userPhone = userInfo.customAttributes?.phone
     }
 
-    // Store in Redis
-    const redisKey = `analytics:play:${actionData.guid}`
-    await setAnalyticsData(redisKey, JSON.stringify(actionData), 86400 * 30) // Store for 30 days
-
-    // Also add to a daily analytics list for easy querying
-    const dateKey = new Date().toISOString().split('T')[0]
-    const dailyKey = `analytics:daily:${dateKey}:play`
-    await pushToList(dailyKey, actionData.guid)
-    await setExpire(dailyKey, 86400 * 90) // Keep daily lists for 90 days
+    // TODO: Store analytics data in database instead of Redis
+    // For now, just log the play event
+    console.log('Play analytics data would be stored:', {
+      key: `analytics:play:${actionData.guid}`,
+      data: actionData,
+      userId: userInfo.sub
+    })
 
     console.log('Video play event tracked:', {
       videoId: actionData.videoId,

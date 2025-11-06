@@ -1,6 +1,6 @@
 'use client'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Configure } from 'react-instantsearch'
 
 import SearchHeader from '@/client/components/layout/Header'
@@ -24,17 +24,28 @@ function SearchLayout() {
   const [showProfileModal, setShowProfileModal] = useState(false)
 
 
-  useEffect(() => {
-    const shouldShowProfileModal = searchParams.get('showProfileModal') === 'true'
-    if (shouldShowProfileModal && isAuthenticated && !authLoading) {
+  // Derive modal state from URL params and auth state
+  const shouldShowProfileModal = useMemo(() => {
+    const urlParam = searchParams.get('showProfileModal') === 'true'
+    if (urlParam && isAuthenticated && !authLoading) {
       const hasCompleteProfile = checkIfUserHasCompleteProfile()
-      if (!hasCompleteProfile) {
-        setShowProfileModal(true)
-        // Clean up URL
-        window.history.replaceState({}, '', '/')
-      }
+      return !hasCompleteProfile
     }
+    return false
   }, [searchParams, isAuthenticated, authLoading, checkIfUserHasCompleteProfile])
+
+  // Effect to clean up URL and update modal state
+  useEffect(() => {
+    if (shouldShowProfileModal) {
+      // Clean up URL first
+      window.history.replaceState({}, '', '/')
+      // Then update modal state in next tick to avoid cascading renders
+      const timer = setTimeout(() => {
+        setShowProfileModal(true)
+      }, 0)
+      return () => clearTimeout(timer)
+    }
+  }, [shouldShowProfileModal])
 
 
 

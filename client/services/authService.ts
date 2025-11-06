@@ -73,6 +73,20 @@ export async function signIn() {
   }
 }
 
+export async function signUp() {
+  try {
+    const authgearInstance = await initializeAuthgear()
+    await authgearInstance.startAuthentication({
+      redirectURI: window.location.origin + '/auth/callback',
+      // Authgear handles both sign-in and sign-up through the same flow
+      // Users can choose to sign up or sign in on the Authgear page
+    })
+  } catch (error) {
+    console.error('Sign up failed:', error)
+    throw error
+  }
+}
+
 export async function signOut() {
   try {
     const authgearInstance = await initializeAuthgear()

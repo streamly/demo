@@ -11,7 +11,7 @@ interface UserMenuProps {
 }
 
 export default function UserMenu({ onProfileModalOpen, onAboutModalOpen }: UserMenuProps) {
-  const { isAuthenticated, user, signIn, signOut, isLoading } = useAuth()
+  const { isAuthenticated, user, signIn, signUp, signOut, isLoading } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const pathname = usePathname()
   
@@ -21,8 +21,12 @@ export default function UserMenu({ onProfileModalOpen, onAboutModalOpen }: UserM
   // Check if we're on the dashboard
   const isOnDashboard = pathname?.startsWith('/dashboard') || false
 
-  const handleSignUp = () => {
-    window.location.href = '/auth/signup'
+  const handleSignUp = async () => {
+    try {
+      await signUp()
+    } catch (error) {
+      console.error('Sign up failed:', error)
+    }
   }
 
   const handleChannelAction = () => {

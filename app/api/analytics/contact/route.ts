@@ -1,6 +1,6 @@
 import { getVideoById, getVideoByObjectId } from '@/server/typesenseClient'
 import { getUserInfoFromAuthgear, verifyAuthgearUser } from '@server/authgearClient'
-import { pushToList, setAnalyticsData, setExpire } from '@server/redisClient'
+// Redis client removed - analytics data will be handled differently
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     // Verify Authgear token
     const authHeader = request.headers.get('authorization')
     const jwtPayload = await verifyAuthgearUser(authHeader || undefined)
-    const token = authHeader!.slice("Bearer ".length).trim()
+    const token = authHeader!.slice('Bearer '.length).trim()
 
     const body = await request.json()
     const { videoId, message } = body
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       guid,
       aid: videoData.uid,
       videoId: videoData.id,
-      videoTitle: videoData.title,
+      videoTitle: videoData.title || 'Untitled Video',
       videoCompany: videoData.company || videoData.channel || '',
       gated: Boolean(videoData.gated),
       hostUrl: request.headers.get('origin') || '',
@@ -99,20 +99,13 @@ export async function POST(request: NextRequest) {
       timestamp: Date.now()
     }
 
-    // Store in Redis
-    const redisKey = `analytics:contact:${actionData.guid}`
-    await setAnalyticsData(redisKey, JSON.stringify(actionData), 86400 * 30) // Store for 30 days
-
-    // Add to daily analytics list
-    const dateKey = new Date().toISOString().split('T')[0]
-    const dailyKey = `analytics:daily:${dateKey}:contact`
-    await pushToList(dailyKey, actionData.guid)
-    await setExpire(dailyKey, 86400 * 90) // Keep daily lists for 90 days
-
-    // Also add to user-specific contact list
-    const userContactKey = `analytics:user:${userInfo.sub}:contacts`
-    await pushToList(userContactKey, actionData.guid)
-    await setExpire(userContactKey, 86400 * 365) // Keep user contacts for 1 year
+    // TODO: Store analytics data in database instead of Redis
+    // For now, just log the contact event
+    console.log('Contact analytics data would be stored:', {
+      key: `analytics:contact:${actionData.guid}`,
+      data: actionData,
+      userId: userInfo.sub
+    })
 
     console.log('Contact event tracked:', {
       videoId: actionData.videoId,

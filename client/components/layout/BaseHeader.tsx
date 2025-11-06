@@ -8,6 +8,7 @@ interface BaseHeaderProps {
   onSearchFocus?: (focused: boolean) => void
   onProfileModalOpen?: () => void
   onAboutModalOpen?: () => void
+  onLogoClick?: () => void
   banner?: ReactNode
   showSearch?: boolean
   title?: string
@@ -16,7 +17,8 @@ interface BaseHeaderProps {
 export default function BaseHeader({ 
   onSearchFocus, 
   onProfileModalOpen,
-  onAboutModalOpen, 
+  onAboutModalOpen,
+  onLogoClick,
   banner,
   showSearch = true,
   title
@@ -27,7 +29,7 @@ export default function BaseHeader({
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <Logo title={title} />
+            <Logo title={title} onClick={onLogoClick} />
           </div>
           
           {/* Search Box */}

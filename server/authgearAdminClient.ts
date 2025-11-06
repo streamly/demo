@@ -1,6 +1,5 @@
-import axios from "axios"
-import { createSign } from "crypto"
-import { UserMetadataSchema } from '@server/validation'
+import axios from 'axios'
+import { createSign } from 'crypto'
 
 
 const AUTHGEAR_ADMIN_KEY_ID = process.env.AUTHGEAR_ADMIN_KEY_ID as string
@@ -22,6 +21,8 @@ interface AuthgearUser {
         position: string
         company: string
         phone: string
+        can_upload: boolean
+        is_channel_owner: boolean
     }
 }
 
@@ -37,32 +38,32 @@ let cachedAdminToken: { token: string; expiresAt: number } | null = null
 function toBase64Url(input: Buffer | string): string {
     const buffer = Buffer.isBuffer(input) ? input : Buffer.from(input)
     return buffer
-        .toString("base64")
-        .replace(/=/g, "")
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
+        .toString('base64')
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
 }
 
 function loadAdminPrivateKey(): string {
     if (!AUTHGEAR_ADMIN_PRIVATE_KEY_PEM)
-        throw new Error("AUTHGEAR_ADMIN_PRIVATE_KEY_PEM is not configured")
+        throw new Error('AUTHGEAR_ADMIN_PRIVATE_KEY_PEM is not configured')
 
-    return AUTHGEAR_ADMIN_PRIVATE_KEY_PEM.replace(/\\n/g, "\n").trim()
+    return AUTHGEAR_ADMIN_PRIVATE_KEY_PEM.replace(/\\n/g, '\n').trim()
 }
 
 function generateAdminJwt(): string {
     if (!AUTHGEAR_PROJECT_ID || !AUTHGEAR_ADMIN_KEY_ID)
-        throw new Error("Authgear Admin key or project ID missing")
+        throw new Error('Authgear Admin key or project ID missing')
 
     const privateKey = loadAdminPrivateKey()
     const now = Math.floor(Date.now() / 1000)
-    const exp = now + 5 * 60 
+    const exp = now + 5 * 60
 
-    const header = { alg: "RS256", typ: "JWT", kid: AUTHGEAR_ADMIN_KEY_ID }
+    const header = { alg: 'RS256', typ: 'JWT', kid: AUTHGEAR_ADMIN_KEY_ID }
     const payload = { aud: [AUTHGEAR_PROJECT_ID], iat: now, exp }
 
     const signingInput = `${toBase64Url(JSON.stringify(header))}.${toBase64Url(JSON.stringify(payload))}`
-    const signature = createSign("RSA-SHA256").update(signingInput).sign(privateKey)
+    const signature = createSign('RSA-SHA256').update(signingInput).sign(privateKey)
     const token = `${signingInput}.${toBase64Url(signature)}`
 
     cachedAdminToken = { token, expiresAt: exp }
@@ -90,7 +91,7 @@ export async function authgearAdminRequest<T>(
             {
                 headers: {
                     Authorization: `Bearer ${getAdminJwt()}`,
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
             }
         )
@@ -160,35 +161,51 @@ export async function pushUserAttributes(userId: string, attributes: UserAttribu
     return data.updateUser?.user || null
 }
 
-export async function updateUserMetadata(userId: string, updates: UserMetadataSchema) {
-    const user = await fetchUserById(userId)
+export interface UserProfileUpdate {
+    givenName?: string
+    familyName?: string
+    website?: string
+    industry?: string
+    position?: string
+    company?: string
+    phone?: string
+    canUpload?: boolean
+    isChannelOwner?: boolean
+}
 
-    if (!user) {
-        throw new Error('User not found')
+
+export async function updateUserMetadata(user: AuthgearUser, updates: UserProfileUpdate) {
+    if (!user?.id) {
+        throw new Error('Invalid user object: missing ID')
     }
 
-    console.log('User for update', user, updates)
+    console.log('Updating user metadata', user.id, updates)
+
     try {
         const standardAttributes = {
             ...user.standardAttributes,
-            given_name: updates.firstname ?? user.standardAttributes?.given_name ?? "",
-            family_name: updates.lastname ?? user.standardAttributes?.family_name ?? "",
-        }
-
-        // Only include website if it's a valid URL
-        if (updates.url && updates.url.trim() !== '') {
-            standardAttributes.website = updates.url
-        } else if (user.standardAttributes?.website) {
-            // Keep existing website if no new one provided
-            standardAttributes.website = user.standardAttributes.website
+            given_name: updates.givenName ?? user.standardAttributes?.given_name ?? '',
+            family_name: updates.familyName ?? user.standardAttributes?.family_name ?? '',
+            website:
+                updates.website?.trim() !== ''
+                    ? updates.website
+                    : user.standardAttributes?.website ?? ''
         }
 
         const customAttributes = {
             ...user.customAttributes,
-            industry: updates.industry ?? user.customAttributes?.industry ?? "",
-            position: updates.position ?? user.customAttributes?.position ?? "",
-            company: updates.company ?? user.customAttributes?.company ?? "",
-            phone: updates.phone ?? user.customAttributes?.phone ?? ""
+            industry: updates.industry ?? user.customAttributes?.industry ?? '',
+            position: updates.position ?? user.customAttributes?.position ?? '',
+            company: updates.company ?? user.customAttributes?.company ?? '',
+            phone: updates.phone ?? user.customAttributes?.phone ?? '',
+            can_upload:
+                updates.canUpload ??
+                user.customAttributes?.can_upload ??
+                false,
+            is_channel_owner:
+                updates.isChannelOwner ??
+                user.customAttributes?.is_channel_owner ??
+                false
         }
 
         const attributes = { standardAttributes, customAttributes }

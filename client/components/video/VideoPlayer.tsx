@@ -1,11 +1,10 @@
 'use client'
+import { useAuth } from '@client/components/auth/AuthProvider'
+import type { VideoHit } from '@client/components/types'
+import { newRelicService } from '@client/services/newRelicService'
 import { useEffect, useRef } from 'react'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
-import { newRelicService } from '@client/services/newRelicService'
-import { trackVideo } from '@client/services/analyticsService'
-import { useAuth } from '@client/components/auth/AuthProvider'
-import type { VideoHit } from '@client/components/types'
 
 interface VideoPlayerProps {
   videoId: string
@@ -58,12 +57,12 @@ export default function VideoPlayer({ videoId, videoData, onReady }: VideoPlayer
       }, async () => {
         // Player ready callback
         console.log('Video.js player is ready')
-        
+
         // Initialize New Relic tracker if video data is available
         if (videoData && newRelicService.isConfigured()) {
           try {
             trackerRef.current = await newRelicService.createVideoTracker(player, videoData, user)
-            
+
             // Add testing methods to window for debugging
             if (typeof window !== 'undefined') {
               (window as any).testNewRelic = () => {
@@ -80,18 +79,18 @@ export default function VideoPlayer({ videoId, videoData, onReady }: VideoPlayer
             console.warn('Failed to initialize New Relic tracker:', error)
           }
         }
-        
+
         onReady?.()
       })
 
       // Add analytics tracking (only once during player initialization)
       player.on('play', async () => {
         console.log('Video started playing')
-        
+
         // Track video play event
         if (videoData) {
           try {
-            await trackVideo(videoData)
+            // await trackVideo(videoData)
           } catch (error) {
             console.warn('Failed to track video play:', error)
           }
@@ -128,7 +127,7 @@ export default function VideoPlayer({ videoId, videoData, onReady }: VideoPlayer
           console.warn('Failed to dispose New Relic tracker:', error)
         }
       }
-      
+
       // Then dispose Video.js player
       if (player && !player.isDisposed()) {
         player.dispose()
@@ -162,19 +161,7 @@ function playVideo(player: any, videoId: string, videoData?: VideoHit) {
 
   // Set the video source with HLS support
   player.src({
-    src: `https://cdn.tubie.cx/${videoId}/playlist.m3u8`,
+    src: `${process.env.NEXT_PUBLIC_VIDEOS_HOST!}/${videoId}/playlist.m3u8`,
     type: 'application/x-mpegURL',
-  })
-
-  // Alternative fallback to direct video file
-  player.ready(() => {
-    // If HLS fails, try direct video file
-    player.on('error', () => {
-      console.log('HLS failed, trying direct video file')
-      player.src({
-        src: `https://cdn.tubie.cx/${videoId}`,
-        type: 'video/mp4',
-      })
-    })
   })
 }

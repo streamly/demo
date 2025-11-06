@@ -1,13 +1,4 @@
-export interface UserProfile {
-  givenName?: string
-  familyName?: string
-  email?: string
-  phone?: string
-  position?: string
-  company?: string
-  industry?: string
-  website?: string
-}
+import { UserProfile } from '@/shared/types/user'
 
 export interface AuthUser {
   sub: string
@@ -29,6 +20,7 @@ export interface AuthContextType {
   user: AuthUser | null
   userProfile: UserProfile
   signIn: () => Promise<void>
+  signUp: () => Promise<void>
   signOut: () => Promise<void>
   refreshAuth: () => Promise<void>
   getMissingProfileFields: () => string[]

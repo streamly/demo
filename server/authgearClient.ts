@@ -1,7 +1,8 @@
-import jwt, { type JwtPayload } from "jsonwebtoken"
-import jwksClient from "jwks-rsa"
-import axios from "axios"
-import { createSign } from "crypto"
+import { UserProfile } from '@/shared/types/user'
+import axios from 'axios'
+import { createSign } from 'crypto'
+import jwt, { type JwtPayload } from 'jsonwebtoken'
+import jwksClient from 'jwks-rsa'
 
 const AUTHGEAR_ENDPOINT = process.env.NEXT_PUBLIC_AUTHGEAR_ENDPOINT as string
 const AUTHGEAR_ADMIN_KEY_ID = process.env.AUTHGEAR_ADMIN_KEY_ID as string
@@ -14,7 +15,7 @@ let cachedClient: ReturnType<typeof jwksClient> | null = null
 
 async function getDiscovery() {
     const res = await fetch(`${AUTHGEAR_ENDPOINT}/.well-known/openid-configuration`)
-    if (!res.ok) throw new Error("Failed to fetch OIDC discovery")
+    if (!res.ok) throw new Error('Failed to fetch OIDC discovery')
     return res.json() as Promise<{ issuer: string; jwks_uri: string }>
 }
 
@@ -39,16 +40,16 @@ export class AuthgearError extends Error {
     code: string
     constructor(code: string, message?: string) {
         super(message || code)
-        this.name = "AuthgearError"
+        this.name = 'AuthgearError'
         this.code = code
     }
 }
 
 export async function verifyAuthgearUser(authHeader?: string): Promise<JwtPayload> {
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        throw new AuthgearError("NO_TOKEN", "Missing or invalid Authorization header")
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new AuthgearError('NO_TOKEN', 'Missing or invalid Authorization header')
     }
-    const token = authHeader.slice("Bearer ".length).trim()
+    const token = authHeader.slice('Bearer '.length).trim()
 
     const { client, issuer } = await getJwksClient()
     const getKey = getKeyFromJwks(client)
@@ -58,11 +59,11 @@ export async function verifyAuthgearUser(authHeader?: string): Promise<JwtPayloa
             jwt.verify(
                 token,
                 getKey,
-                { algorithms: ["RS256"], issuer },
+                { algorithms: ['RS256'], issuer },
                 (err, decoded) => {
                     if (err) {
-                        if (err.name === "TokenExpiredError") reject(new AuthgearError("EXPIRED_TOKEN", "Authgear token expired"))
-                        else reject(new AuthgearError("INVALID_TOKEN", "Authgear token invalid"))
+                        if (err.name === 'TokenExpiredError') reject(new AuthgearError('EXPIRED_TOKEN', 'Authgear token expired'))
+                        else reject(new AuthgearError('INVALID_TOKEN', 'Authgear token invalid'))
                         return
                     }
                     resolve(decoded as JwtPayload)
@@ -72,7 +73,7 @@ export async function verifyAuthgearUser(authHeader?: string): Promise<JwtPayloa
         return payload
     } catch (e) {
         if (e instanceof AuthgearError) throw e
-        throw new AuthgearError("INVALID_TOKEN", "Authgear verification failed")
+        throw new AuthgearError('INVALID_TOKEN', 'Authgear verification failed')
     }
 }
 
@@ -86,13 +87,13 @@ export async function getUserInfoFromAuthgear(token: string) {
         })
 
         if (!response.ok) {
-            throw new AuthgearError("USERINFO_FAILED", "Failed to fetch user info from Authgear")
+            throw new AuthgearError('USERINFO_FAILED', 'Failed to fetch user info from Authgear')
         }
 
         return await response.json()
     } catch (error) {
         console.error('Failed to fetch user info from Authgear:', error)
-        throw new AuthgearError("USERINFO_FAILED", "Failed to fetch user info from Authgear")
+        throw new AuthgearError('USERINFO_FAILED', 'Failed to fetch user info from Authgear')
     }
 }
 
@@ -124,32 +125,32 @@ let cachedAdminToken: { token: string; expiresAt: number } | null = null
 function toBase64Url(input: Buffer | string): string {
     const buffer = Buffer.isBuffer(input) ? input : Buffer.from(input)
     return buffer
-        .toString("base64")
-        .replace(/=/g, "")
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
+        .toString('base64')
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
 }
 
 function loadAdminPrivateKey(): string {
     if (!AUTHGEAR_ADMIN_PRIVATE_KEY_PEM)
-        throw new Error("AUTHGEAR_ADMIN_PRIVATE_KEY_PEM is not configured")
+        throw new Error('AUTHGEAR_ADMIN_PRIVATE_KEY_PEM is not configured')
 
-    return AUTHGEAR_ADMIN_PRIVATE_KEY_PEM.replace(/\\n/g, "\n").trim()
+    return AUTHGEAR_ADMIN_PRIVATE_KEY_PEM.replace(/\\n/g, '\n').trim()
 }
 
 function generateAdminJwt(): string {
     if (!AUTHGEAR_PROJECT_ID || !AUTHGEAR_ADMIN_KEY_ID)
-        throw new Error("Authgear Admin key or project ID missing")
+        throw new Error('Authgear Admin key or project ID missing')
 
     const privateKey = loadAdminPrivateKey()
     const now = Math.floor(Date.now() / 1000)
     const exp = now + 5 * 60 // valid for 5 min
 
-    const header = { alg: "RS256", typ: "JWT", kid: AUTHGEAR_ADMIN_KEY_ID }
+    const header = { alg: 'RS256', typ: 'JWT', kid: AUTHGEAR_ADMIN_KEY_ID }
     const payload = { aud: [AUTHGEAR_PROJECT_ID], iat: now, exp }
 
     const signingInput = `${toBase64Url(JSON.stringify(header))}.${toBase64Url(JSON.stringify(payload))}`
-    const signature = createSign("RSA-SHA256").update(signingInput).sign(privateKey)
+    const signature = createSign('RSA-SHA256').update(signingInput).sign(privateKey)
     const token = `${signingInput}.${toBase64Url(signature)}`
 
     cachedAdminToken = { token, expiresAt: exp }
@@ -175,7 +176,7 @@ export async function authgearAdminRequest<T>(
             {
                 headers: {
                     Authorization: `Bearer ${getAdminJwt()}`,
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
             }
         )
@@ -239,17 +240,7 @@ export async function pushUserAttributes(userId: string, attributes: UserAttribu
     return data.updateUser?.user || null
 }
 
-interface UserMetadataUpdates {
-    firstname?: string
-    lastname?: string
-    position?: string
-    company?: string
-    industry?: string
-    phone?: string
-    url?: string
-}
-
-export async function updateUserMetadata(userId: string, updates: UserMetadataUpdates) {
+export async function updateAuthgearUserMetadata(userId: string, updates: UserProfile) {
     const user = await fetchUserById(userId)
 
     if (!user) {
@@ -260,13 +251,13 @@ export async function updateUserMetadata(userId: string, updates: UserMetadataUp
     try {
         const standardAttributes = {
             ...user.standardAttributes,
-            given_name: updates.firstname ?? user.standardAttributes?.given_name ?? "",
-            family_name: updates.lastname ?? user.standardAttributes?.family_name ?? "",
+            given_name: updates.givenName ?? user.standardAttributes?.given_name ?? '',
+            family_name: updates.familyName ?? user.standardAttributes?.family_name ?? '',
         }
 
         // Only include website if it's a valid URL
-        if (updates.url && updates.url.trim() !== '') {
-            standardAttributes.website = updates.url
+        if (updates.website && updates.website.trim() !== '') {
+            standardAttributes.website = updates.website
         } else if (user.standardAttributes?.website) {
             // Keep existing website if no new one provided
             standardAttributes.website = user.standardAttributes.website
@@ -274,10 +265,10 @@ export async function updateUserMetadata(userId: string, updates: UserMetadataUp
 
         const customAttributes = {
             ...user.customAttributes,
-            industry: updates.industry ?? user.customAttributes?.industry ?? "",
-            position: updates.position ?? user.customAttributes?.position ?? "",
-            company: updates.company ?? user.customAttributes?.company ?? "",
-            phone: updates.phone ?? user.customAttributes?.phone ?? ""
+            industry: updates.industry ?? user.customAttributes?.industry ?? '',
+            position: updates.position ?? user.customAttributes?.position ?? '',
+            company: updates.company ?? user.customAttributes?.company ?? '',
+            phone: updates.phone ?? user.customAttributes?.phone ?? ''
         }
 
         const attributes = { standardAttributes, customAttributes }

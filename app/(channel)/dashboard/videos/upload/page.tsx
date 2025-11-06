@@ -1,14 +1,15 @@
 'use client'
 import VideoUploader from '@client/components/upload/VideoUploader'
 import { useRouter } from 'next/navigation'
-import '@uppy/react/css/style.css'
+import '@uppy/core/dist/style.css'
+import '@uppy/dashboard/dist/style.css'
 
 export default function UploadPage() {
   const router = useRouter()
 
   const handleUploadComplete = (videoId: string) => {
-    // Redirect to main page with video ID
-    router.push(`/?v=${encodeURIComponent(videoId)}`)
+    // Redirect to dashboard with video ID to open edit modal
+    router.push(`/dashboard?v=${encodeURIComponent(videoId)}`)
   }
 
   return (

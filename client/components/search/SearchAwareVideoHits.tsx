@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useInfiniteHits } from 'react-instantsearch'
 import { getVideoThumbnail } from '@client/utils/thumbnailUtils'
+import VideoEditModal from '@client/components/modals/VideoEditModal'
 
 // Skeleton component for loading state
 function VideoCardSkeleton() {
@@ -43,6 +44,8 @@ function VideoCardSkeleton() {
 export default function SearchAwareVideoHits() {
   const { items, showMore, isLastPage } = useInfiniteHits()
   const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   // Track initial loading state
@@ -59,6 +62,17 @@ export default function SearchAwareVideoHits() {
 
     return () => clearTimeout(timer)
   }, [items.length])
+
+  // Handle video row click
+  const handleVideoClick = (videoId: string) => {
+    setSelectedVideoId(videoId)
+    setIsEditModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsEditModalOpen(false)
+    setSelectedVideoId(null)
+  }
 
   useEffect(() => {
     const el = sentinelRef.current
@@ -110,7 +124,11 @@ export default function SearchAwareVideoHits() {
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="divide-y divide-gray-200">
         {items.map((hit: any) => (
-          <div key={hit.objectID} className="p-4 hover:bg-gray-50 transition-colors">
+          <div 
+            key={hit.objectID} 
+            className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+            onClick={() => handleVideoClick(hit.id)}
+          >
             <div className="flex items-center space-x-4">
               {/* Thumbnail */}
               <div className="flex-shrink-0 relative">
@@ -182,6 +200,13 @@ export default function SearchAwareVideoHits() {
         ))}
       </div>
       {!isLastPage && <div ref={sentinelRef} className="h-10" />}
+      
+      {/* Video Edit Modal */}
+      <VideoEditModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseModal}
+        videoId={selectedVideoId}
+      />
     </div>
   )
 }

@@ -1,6 +1,5 @@
 // Simple API functions - no classes, no complexity
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
+import { UserProfile } from '@/shared/types/user'
 
 async function getAuthToken(): Promise<string | null> {
   try {
@@ -14,7 +13,7 @@ async function getAuthToken(): Promise<string | null> {
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = await getAuthToken()
   
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetch(endpoint, {
     headers: {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -32,16 +31,21 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 // Profile functions
-export async function updateProfile(profileData: any) {
-  return apiCall('/api/users/me', {
-    method: 'POST',
-    body: JSON.stringify(profileData),
-  })
+export async function updateProfile(profileData: UserProfile) {
+  try {
+    return await apiCall('/api/users/me', {
+      method: 'POST',
+      body: JSON.stringify(profileData),
+    })
+  } catch (error) {
+    // Generic error for user - don't expose internal details
+    throw new Error('Unable to save profile. Please try again.')
+  }
 }
 
-export async function getProfile() {
+export async function getProfile(): Promise<UserProfile | null> {
   try {
-    return await apiCall('/api/users/me')
+    return await apiCall<UserProfile>('/api/users/me')
   } catch {
     return null
   }
@@ -76,7 +80,10 @@ export function validateUrl(url: string): boolean {
   }
 }
 
-export function getRequiredFields(profile: any): string[] {
-  const required = ['givenName', 'familyName', 'email', 'phone', 'position', 'company', 'industry']
-  return required.filter(field => !profile[field]?.trim())
+export function getRequiredFields(profile: UserProfile): string[] {
+  const required: (keyof UserProfile)[] = ['givenName', 'familyName', 'email', 'phone', 'position', 'company', 'industry']
+  return required.filter(field => {
+    const value = profile[field]
+    return !value || (typeof value === 'string' && value.trim() === '')
+  })
 }

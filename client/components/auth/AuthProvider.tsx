@@ -1,7 +1,8 @@
 'use client'
-import { checkAuthState as checkAuth, signIn as authSignIn, signOut as authSignOut } from '@client/services/authService'
+import { checkAuthState as checkAuth, signIn as authSignIn, signUp as authSignUp, signOut as authSignOut } from '@client/services/authService'
 import { validateProfileData, isProfileComplete, saveProfile } from '@client/services/profileService'
-import { AuthContextType, AuthUser, UserProfile } from '@client/types/profile'
+import { AuthContextType, AuthUser } from '@client/types/profile'
+import { UserProfile } from '@/shared/types/user'
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -75,6 +76,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  const signUp = async () => {
+    try {
+      await authSignUp()
+    } catch (error) {
+      console.error('Sign up failed:', error)
+    }
+  }
+
   const signOut = async () => {
     try {
       setIsLoading(true)
@@ -118,6 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     userProfile,
     signIn,
+    signUp,
     signOut,
     refreshAuth,
     getMissingProfileFields,

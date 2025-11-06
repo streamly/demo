@@ -1,4 +1,5 @@
 'use client'
+import { UserProfile } from '@/shared/types/user'
 import { useAuth } from '@client/components/auth/AuthProvider'
 import Alert from '@client/components/ui/Alert'
 import Button from '@client/components/ui/Button'
@@ -14,31 +15,34 @@ interface ProfileModalProps {
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { userProfile, updateUserProfile, getMissingProfileFields } = useAuth()
-  const [formData, setFormData] = useState({
-    firstname: '',
-    lastname: '',
+  const [formData, setFormData] = useState<UserProfile>({
+    givenName: '',
+    familyName: '',
     email: '',
     phone: '',
     position: '',
     company: '',
     industry: '',
-    url: ''
+    website: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (isOpen && userProfile) {
       setFormData({
-        firstname: userProfile.givenName || '',
-        lastname: userProfile.familyName || '',
+        givenName: userProfile.givenName || '',
+        familyName: userProfile.familyName || '',
         email: userProfile.email || '',
         phone: userProfile.phone || '',
         position: userProfile.position || '',
         company: userProfile.company || '',
         industry: userProfile.industry || '',
-        url: userProfile.website || ''
+        website: userProfile.website || ''
       })
+      setFieldErrors({})
+      setSubmitStatus('idle')
     }
   }, [isOpen, userProfile])
 
@@ -46,25 +50,83 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     e.preventDefault()
     setIsSubmitting(true)
     setSubmitStatus('idle')
+    setFieldErrors({})
 
-    try {
-      await updateUserProfile(formData)
+    // Client-side validation matching backend schema
+    const errors: Record<string, string> = {}
+    
+    // Required fields with length validation
+    const requiredFields = {
+      givenName: { label: 'First Name', maxLength: 100 },
+      familyName: { label: 'Last Name', maxLength: 100 },
+      position: { label: 'Title / Position', maxLength: 100 },
+      company: { label: 'Company / Organization', maxLength: 100 },
+      industry: { label: 'Industry', maxLength: 100 },
+      phone: { label: 'Phone', maxLength: null },
+      email: { label: 'Email', maxLength: null }
+    }
+    
+    for (const [field, config] of Object.entries(requiredFields)) {
+      const value = formData[field as keyof UserProfile]
+      const trimmedValue = typeof value === 'string' ? value.trim() : ''
+      
+      if (!trimmedValue) {
+        errors[field] = `${config.label} is required`
+      } else if (config.maxLength && trimmedValue.length > config.maxLength) {
+        errors[field] = `${config.label} must be ${config.maxLength} characters or less`
+      }
+    }
+    
+    // Website validation (optional but must be valid URL if provided)
+    if (formData.website && formData.website.trim()) {
+      const website = formData.website.trim()
+      if (website.length > 255) {
+        errors.website = 'Website URL must be 255 characters or less'
+      } else {
+        try {
+          new URL(website)
+        } catch {
+          errors.website = 'Website URL must be a valid URL'
+        }
+      }
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      setSubmitStatus('error')
+      setIsSubmitting(false)
+      return
+    }
+
+    const success = await updateUserProfile(formData)
+    
+    if (success) {
       setSubmitStatus('success')
       setTimeout(() => {
         onClose()
         setSubmitStatus('idle')
       }, 1000)
-    } catch (error) {
-      console.error('Failed to update profile:', error)
+    } else {
       setSubmitStatus('error')
-    } finally {
-      setIsSubmitting(false)
     }
+    
+    setIsSubmitting(false)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+      if (Object.keys(fieldErrors).length === 1) {
+        setSubmitStatus('idle')
+      }
+    }
   }
 
   const missingFields = getMissingProfileFields()
@@ -90,25 +152,25 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <InputField
-            label="First Name"
-            id="firstname"
-            name="firstname"
-            value={formData.firstname}
-            onChange={handleChange}
-            required
-          />
+        <InputField
+          label="First Name"
+          id="givenName"
+          name="givenName"
+          value={formData.givenName}
+          onChange={handleChange}
+          required
+          error={fieldErrors.givenName}
+        />
 
-          <InputField
-            label="Last Name"
-            id="lastname"
-            name="lastname"
-            value={formData.lastname}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        <InputField
+          label="Last Name"
+          id="familyName"
+          name="familyName"
+          value={formData.familyName}
+          onChange={handleChange}
+          required
+          error={fieldErrors.familyName}
+        />
 
         <InputField
           label="Email"
@@ -119,59 +181,61 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           onChange={handleChange}
           disabled
           className="opacity-60"
+          error={fieldErrors.email}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <InputField
-            label="Phone"
-            type="tel"
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-          />
+        <InputField
+          label="Phone"
+          type="tel"
+          id="phone"
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          required
+          error={fieldErrors.phone}
+        />
 
-          <InputField
-            label="Title / Position"
-            id="position"
-            name="position"
-            value={formData.position}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        <InputField
+          label="Company / Organization"
+          id="company"
+          name="company"
+          value={formData.company}
+          onChange={handleChange}
+          required
+          error={fieldErrors.company}
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <InputField
-            label="Company / Organization"
-            id="company"
-            name="company"
-            value={formData.company}
-            onChange={handleChange}
-            required
-          />
+        <InputField
+          label="Title / Position"
+          id="position"
+          name="position"
+          value={formData.position}
+          onChange={handleChange}
+          required
+          error={fieldErrors.position}
+        />
 
-          <SelectField
-            label="Industry"
-            id="industry"
-            name="industry"
-            value={formData.industry}
-            onChange={handleChange}
-            options={INDUSTRY_OPTIONS}
-            placeholder="Select an industry"
-            required
-          />
-        </div>
+        <SelectField
+          label="Industry"
+          id="industry"
+          name="industry"
+          value={formData.industry}
+          onChange={handleChange}
+          options={INDUSTRY_OPTIONS}
+          placeholder="Select an industry"
+          required
+          error={fieldErrors.industry}
+        />
 
         <InputField
           label="Website URL"
           type="url"
-          id="url"
-          name="url"
-          value={formData.url}
+          id="website"
+          name="website"
+          value={formData.website}
           onChange={handleChange}
           placeholder="https://example.com"
+          error={fieldErrors.website}
         />
 
         <div className="flex justify-end gap-3 pt-6">
@@ -193,7 +257,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           </div>
         )}
 
-        {submitStatus === 'error' && (
+        {submitStatus === 'error' && Object.keys(fieldErrors).length === 0 && (
           <div className="text-red-600 text-sm text-center">
             {MESSAGES.PROFILE.UPDATE_ERROR}
           </div>

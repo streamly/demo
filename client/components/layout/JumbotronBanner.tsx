@@ -4,11 +4,14 @@ import { useAuth } from '@client/components/auth/AuthProvider'
 
 export default function JumbotronBanner() {
   const { indexUiState } = useInstantSearch()
-  const { signIn, isAuthenticated } = useAuth()
+  const { signIn, signUp, isAuthenticated } = useAuth()
 
-  const handleSignUp = () => {
-    // Redirect to sign-up page
-    window.location.href = '/auth/signup' // or use your sign-up URL
+  const handleSignUp = async () => {
+    try {
+      await signUp()
+    } catch (error) {
+      console.error('Sign up failed:', error)
+    }
   }
   
   // Check if user has searched (has query or filters)

@@ -36,6 +36,7 @@ export default function ChannelLayout({
       <InstantSearchWrapper indexName="videos">
         <BaseHeader
           onProfileModalOpen={() => setIsProfileModalOpen(true)}
+          onLogoClick={() => router.push('/dashboard')}
           title="Channel Dashboard"
         />
 
