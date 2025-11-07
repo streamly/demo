@@ -282,11 +282,11 @@ function ProfilePageContent() {
                     </button>
 
                     {submitStatus === 'success' && (
-                      <span className="text-sm text-green-600">✓ Profile saved successfully!</span>
+                      <span className="text-sm text-green-600">Profile saved successfully!</span>
                     )}
 
                     {submitStatus === 'error' && (
-                      <span className="text-sm text-red-600">✗ Failed to save profile</span>
+                      <span className="text-sm text-red-600">Failed to save profile</span>
                     )}
                   </div>
                 </form>

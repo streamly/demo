@@ -2,68 +2,56 @@ import { VideoHit } from '@client/components/types'
 import Typesense from 'typesense'
 import TypesenseInstantSearchAdapter from 'typesense-instantsearch-adapter'
 
-// Log environment configuration (safe subset)
-if (process.env.NODE_ENV !== 'production') {
-  console.log('[Typesense Config]:')
-  console.log('  HOST:', process.env.NEXT_PUBLIC_TYPESENSE_HOST)
-  console.log('  PORT:', process.env.NEXT_PUBLIC_TYPESENSE_PORT)
-  console.log('  PROTOCOL:', process.env.NEXT_PUBLIC_TYPESENSE_PROTOCOL)
-  console.log('  SEARCH KEY set:', Boolean(process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY))
-}
+// Environment variables
+const TYPESENSE_HOST = process.env.NEXT_PUBLIC_TYPESENSE_HOST!
+const TYPESENSE_PORT = parseInt(process.env.NEXT_PUBLIC_TYPESENSE_PORT!)
+const TYPESENSE_PROTOCOL = process.env.NEXT_PUBLIC_TYPESENSE_PROTOCOL! as 'http' | 'https'
+const TYPESENSE_SEARCH_KEY = process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY!
+const TYPESENSE_COLLECTION = process.env.NEXT_PUBLIC_TYPESENSE_COLLECTION!
 
-// Shared Typesense configuration
-export const typesenseConfig = {
-  host: process.env.NEXT_PUBLIC_TYPESENSE_HOST!,
-  port: parseInt(process.env.NEXT_PUBLIC_TYPESENSE_PORT!),
-  protocol: process.env.NEXT_PUBLIC_TYPESENSE_PROTOCOL! as 'http' | 'https',
-  apiKey: process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY!,
-}
+console.log('Typesense config:', {
+  TYPESENSE_HOST,
+  TYPESENSE_PORT,
+  TYPESENSE_PROTOCOL,
+  TYPESENSE_SEARCH_KEY,
+  TYPESENSE_COLLECTION,
+})
 
 // Initialize Typesense client for direct API calls
 const client = new Typesense.Client({
-  nodes: [typesenseConfig],
-  apiKey: typesenseConfig.apiKey,
+  nodes: [{
+    host: TYPESENSE_HOST,
+    protocol: TYPESENSE_PROTOCOL,
+    port: TYPESENSE_PORT
+  }],
+  apiKey: TYPESENSE_SEARCH_KEY,
   connectionTimeoutSeconds: 2,
 })
 
-// Create InstantSearch adapter with shared config
+// Create InstantSearch adapter with scoped key
 export function createInstantSearchAdapter(apiKey?: string) {
   return new TypesenseInstantSearchAdapter({
     server: {
-      apiKey: apiKey || typesenseConfig.apiKey,
-      nodes: [typesenseConfig],
+      apiKey: apiKey || TYPESENSE_SEARCH_KEY,
+      nodes: [{
+        host: TYPESENSE_HOST,
+        protocol: TYPESENSE_PROTOCOL,
+        port: TYPESENSE_PORT
+      }],
     },
     additionalSearchParameters: {
       query_by: 'title,description,types,audiences,companies,topics,tags,people',
-      sort_by: 'created_at:desc',
-      // Performance optimizations
-      highlight_full_fields: 'title,description',
-      highlight_affix_num_tokens: 3,
-      typo_tokens_threshold: 1,
-      drop_tokens_threshold: 1,
-      prioritize_exact_match: true,
-      prioritize_token_position: true,
+      sort_by: 'updated_at:desc',
     },
   })
 }
 
-function isConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_TYPESENSE_HOST &&
-    process.env.NEXT_PUBLIC_TYPESENSE_SEARCH_KEY
-  )
-}
 
 export async function findVideoById(videoId: string): Promise<VideoHit | null> {
   try {
-    if (!isConfigured()) {
-      console.warn('Typesense not configured')
-      return null
-    }
-
     // Try searching by id field first
     try {
-      const searchResults = await client.collections('videos').documents().search({
+      const searchResults = await client.collections(TYPESENSE_COLLECTION).documents().search({
         q: '*',
         filter_by: `id:=${videoId}`,
         per_page: 1,
@@ -79,7 +67,7 @@ export async function findVideoById(videoId: string): Promise<VideoHit | null> {
 
     // Try searching by objectID field
     try {
-      const searchResults = await client.collections('videos').documents().search({
+      const searchResults = await client.collections(TYPESENSE_COLLECTION).documents().search({
         q: '*',
         filter_by: `objectID:=${videoId}`,
         per_page: 1,
@@ -95,7 +83,7 @@ export async function findVideoById(videoId: string): Promise<VideoHit | null> {
 
     // Last resort: direct document fetch
     try {
-      const document = await client.collections('videos').documents(videoId).retrieve()
+      const document = await client.collections(TYPESENSE_COLLECTION).documents(videoId).retrieve()
       console.log('Found video by direct fetch:', document)
       return document as VideoHit
     } catch {
@@ -115,11 +103,6 @@ export async function searchVideos(
   filters: Record<string, string[]> = {}
 ): Promise<VideoHit[]> {
   try {
-    if (!isConfigured()) {
-      console.warn('Typesense not configured')
-      return []
-    }
-
     // Build filter string
     const filterParts = Object.entries(filters)
       .filter(([_, values]) => values.length > 0)
@@ -132,13 +115,13 @@ export async function searchVideos(
       q: query || '*',
       query_by: 'title,description,types,audiences,companies,topics,tags,people',
       per_page: 20,
-      sort_by: 'created_at:desc',
+      sort_by: 'updated_at:desc',
       ...(filterBy ? { filter_by: filterBy } : {}),
     }
 
     console.log('Typesense search parameters:', searchParameters)
 
-    const searchResults = await client.collections('videos').documents().search(searchParameters)
+    const searchResults = await client.collections(TYPESENSE_COLLECTION).documents().search(searchParameters)
 
     return searchResults.hits?.map((hit: any) => hit.document) || []
   } catch (error) {
@@ -150,20 +133,15 @@ export async function searchVideos(
 
 export async function getRecentVideos(limit: number = 20): Promise<VideoHit[]> {
   try {
-    if (!isConfigured()) {
-      console.warn('Typesense not configured')
-      return []
-    }
-
     const searchParameters = {
       q: '*',
       query_by: 'title',
       per_page: limit,
-      sort_by: 'created_at:desc',
+      sort_by: 'updated_at:desc',
       filter_by: 'visibility:=public',
     }
 
-    const searchResults = await client.collections('videos').documents().search(searchParameters)
+    const searchResults = await client.collections(TYPESENSE_COLLECTION).documents().search(searchParameters)
     return searchResults.hits?.map((hit: any) => hit.document) || []
   } catch (error) {
     console.error('Error fetching recent videos:', error)
@@ -173,22 +151,15 @@ export async function getRecentVideos(limit: number = 20): Promise<VideoHit[]> {
 
 export async function getTrendingVideos(limit: number = 20): Promise<VideoHit[]> {
   try {
-    if (!isConfigured()) {
-      console.warn('Typesense not configured')
-      return []
-    }
-
-    // For trending, we could sort by view count or engagement if those fields exist
-    // For now, we'll use recent videos as a fallback
     const searchParameters = {
       q: '*',
       query_by: 'title',
       per_page: limit,
-      sort_by: 'created_at:desc',
+      sort_by: 'updated_at:desc',
       filter_by: 'visibility:=public',
     }
 
-    const searchResults = await client.collections('videos').documents().search(searchParameters)
+    const searchResults = await client.collections(TYPESENSE_COLLECTION).documents().search(searchParameters)
     return searchResults.hits?.map((hit: any) => hit.document) || []
   } catch (error) {
     console.error('Error fetching trending videos:', error)

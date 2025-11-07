@@ -6,7 +6,7 @@ const trackedVideos = new Set<string>() // Track videos played in this session
 
 export async function trackVideo(videoData: VideoHit): Promise<boolean> {
   try {
-    const videoId = videoData.objectID || videoData.id
+    const videoId = videoData.id
     
     // Check if already tracked in this session
     if (trackedVideos.has(videoId)) {
@@ -27,7 +27,7 @@ export async function trackVideo(videoData: VideoHit): Promise<boolean> {
 export async function trackContact(videoData: VideoHit, message: string): Promise<boolean> {
   try {
     await sendContactForm({
-      videoId: videoData.objectID || videoData.id,
+      videoId: videoData.id,
       videoTitle: videoData.title,
       message,
       timestamp: new Date().toISOString()

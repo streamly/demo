@@ -1,5 +1,5 @@
 // Simple API functions - no classes, no complexity
-import { UserProfile } from '@/shared/types/user'
+import { UserProfileInput } from '@/shared/types/user'
 
 async function getAuthToken(): Promise<string | null> {
   try {
@@ -12,7 +12,7 @@ async function getAuthToken(): Promise<string | null> {
 
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = await getAuthToken()
-  
+
   const response = await fetch(endpoint, {
     headers: {
       'Content-Type': 'application/json',
@@ -31,7 +31,7 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 // Profile functions
-export async function updateProfile(profileData: UserProfile) {
+export async function updateProfile(profileData: UserProfileInput) {
   try {
     return await apiCall('/api/users/me', {
       method: 'POST',
@@ -43,9 +43,9 @@ export async function updateProfile(profileData: UserProfile) {
   }
 }
 
-export async function getProfile(): Promise<UserProfile | null> {
+export async function getProfile(): Promise<UserProfileInput | null> {
   try {
-    return await apiCall<UserProfile>('/api/users/me')
+    return await apiCall<UserProfileInput>('/api/users/me')
   } catch {
     return null
   }
@@ -80,8 +80,8 @@ export function validateUrl(url: string): boolean {
   }
 }
 
-export function getRequiredFields(profile: UserProfile): string[] {
-  const required: (keyof UserProfile)[] = ['givenName', 'familyName', 'email', 'phone', 'position', 'company', 'industry']
+export function getRequiredFields(profile: UserProfileInput): string[] {
+  const required: (keyof UserProfileInput)[] = ['givenName', 'familyName', 'email', 'phone', 'position', 'company', 'industry']
   return required.filter(field => {
     const value = profile[field]
     return !value || (typeof value === 'string' && value.trim() === '')

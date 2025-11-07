@@ -100,7 +100,7 @@ function SearchLayout() {
 export default function Page() {
   return (
     <TypesenseSearchProvider autoInitialize={true}>
-      <InstantSearchWrapper indexName="videos">
+      <InstantSearchWrapper>
         <Configure hitsPerPage={12} />
         <SearchProvider>
           <SearchLayout />

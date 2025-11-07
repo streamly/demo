@@ -1,4 +1,4 @@
-import { UserProfile } from '@/shared/types/user'
+import { UserProfileInput } from '@/shared/types/user'
 
 export interface AuthUser {
   sub: string
@@ -18,12 +18,12 @@ export interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   user: AuthUser | null
-  userProfile: UserProfile
+  userProfile: UserProfileInput
   signIn: () => Promise<void>
   signUp: () => Promise<void>
   signOut: () => Promise<void>
   refreshAuth: () => Promise<void>
   getMissingProfileFields: () => string[]
   checkIfUserHasCompleteProfile: () => boolean
-  updateUserProfile: (profile: UserProfile) => Promise<boolean>
+  updateUserProfile: (profile: UserProfileInput) => Promise<boolean>
 }

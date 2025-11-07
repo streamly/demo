@@ -33,7 +33,7 @@ export default function ChannelLayout({
 
   return (
     <TypesenseSearchProvider autoInitialize={false}>
-      <InstantSearchWrapper indexName="videos">
+      <InstantSearchWrapper>
         <BaseHeader
           onProfileModalOpen={() => setIsProfileModalOpen(true)}
           onLogoClick={() => router.push('/dashboard')}

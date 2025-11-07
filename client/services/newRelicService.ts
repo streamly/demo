@@ -50,11 +50,11 @@ class NewRelicService {
       // Get New Relic options
       const options = this.getNewRelicOptions({
         contentTitle: videoData.title,
-        videoId: videoData.objectID || videoData.id,
-        companyName: videoData.company,
+        videoId: videoData.id,
+        companyName: videoData.companies?.[0],
         tags: videoData.tags?.join(', '),
-        industry: videoData.industry,
-        publisher: videoData.publisher,
+        industry: undefined,
+        publisher: undefined,
         userId: userContext?.sub,
         userCompany: userContext?.customAttributes?.company,
         userIndustry: userContext?.customAttributes?.industry,
@@ -111,14 +111,14 @@ class NewRelicService {
       }
       
       console.log('New Relic video tracker initialized', {
-        videoId: videoData.objectID || videoData.id,
+        videoId: videoData.id,
         title: videoData.title,
-        company: videoData.company
+        company: videoData.companies?.[0]
       })
 
       return tracker
     } catch (error) {
-      console.error('❌ Failed to initialize New Relic video tracker:', error)
+      console.error('Failed to initialize New Relic video tracker:', error)
       return null
     }
   }

@@ -1,6 +1,6 @@
-import { UserProfile } from './types/user'
+import { UserProfileInput } from './types/user'
 
-export function getMissingProfileFields(user: any): (keyof Omit<UserProfile, 'website'>)[] {
+export function getMissingProfileFields(user: any): (keyof Omit<UserProfileInput, 'website'>)[] {
   if (!user) {
     return ['givenName', 'familyName', 'email', 'phone', 'position', 'company', 'industry']
   }
@@ -19,14 +19,14 @@ export function getMissingProfileFields(user: any): (keyof Omit<UserProfile, 'we
 
   return Object.entries(required)
     .filter(([_, value]) => typeof value !== 'string' || value.trim() === '')
-    .map(([key]) => key as keyof Omit<UserProfile, 'website'>)
+    .map(([key]) => key as keyof Omit<UserProfileInput, 'website'>)
 }
 
 export function checkIfUserHasCompleteProfile(user: any): boolean {
   return getMissingProfileFields(user).length === 0
 }
 
-export function extractUserProfile(user: any): UserProfile {
+export function extractUserProfile(user: any): UserProfileInput {
   if (!user) {
     return {}
   }

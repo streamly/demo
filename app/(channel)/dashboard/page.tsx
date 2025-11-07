@@ -2,7 +2,7 @@
 import { useAuth } from '@client/components/auth/AuthProvider'
 import VideoEditModal from '@client/components/modals/VideoEditModal'
 import DashboardSearchInitializer from '@client/components/search/DashboardSearchWrapper'
-import SearchAwareVideoHits from '@client/components/search/SearchAwareVideoHits'
+import VideoList from '@client/components/video/VideoList'
 import SidebarFilters from '@client/components/search/SidebarFilters' // Temporarily disabled
 import SidebarFiltersSkeleton from '@client/components/search/SidebarFiltersSkeleton'
 import { useTypesenseSearch } from '@client/components/search/TypesenseSearchProvider'
@@ -37,15 +37,16 @@ function UploadButton() {
   )
 }
 
-// Component to trigger initial search
+// Component to trigger initial search with user filter
 function InitialSearchTrigger() {
   const { refine } = useSearchBox()
+  const { user } = useAuth()
 
   useEffect(() => {
     // Trigger initial search with empty query to get all results
-    console.log('Dashboard: Triggering initial search')
+    console.log('Dashboard: Triggering initial search for user:', user?.sub)
     refine('')
-  }, [refine])
+  }, [refine, user?.sub])
 
   return null
 }
@@ -53,22 +54,25 @@ function InitialSearchTrigger() {
 // Debug component to check search state
 function SearchDebugger() {
   const { indexUiState, results, error } = useInstantSearch()
+  const { user } = useAuth()
 
   useEffect(() => {
     console.log('Dashboard Search State:', {
+      userId: user?.sub,
       query: indexUiState.query,
+      filters: indexUiState.configure?.filters,
       results: results,
       error: error,
       nbHits: results?.nbHits,
       processingTimeMS: results?.processingTimeMS
     })
-  }, [indexUiState, results, error])
+  }, [indexUiState, results, error, user?.sub])
 
   return null
 }
 
 export default function DashboardPage() {
-  const { isLoading: authLoading } = useAuth()
+  const { isLoading: authLoading, user } = useAuth()
   const { isReady: searchReady } = useTypesenseSearch()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -113,19 +117,23 @@ export default function DashboardPage() {
                   Manage and track your video content
                 </p>
               </div>
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <UploadButton />
               </div>
             </div>
           </div>
 
           <DashboardSearchInitializer>
-            <Configure hitsPerPage={20} query="" />
+            <Configure 
+              hitsPerPage={20} 
+              query="" 
+              filters={user?.sub ? `user_id:=${user.sub}` : ''}
+            />
             <InitialSearchTrigger />
             <SearchDebugger />
           </DashboardSearchInitializer>
 
-          <SearchAwareVideoHits />
+          <VideoList />
         </div>
       </div>
     </div>

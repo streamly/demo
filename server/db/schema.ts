@@ -2,8 +2,9 @@ import { relations } from 'drizzle-orm'
 import { bigint, boolean, integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 
 const timestamps = {
-    createdAt: timestamp('created_at').defaultNow(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at')
+        .notNull()
         .defaultNow()
         .$onUpdate(() => new Date())
 }
@@ -23,29 +24,28 @@ export const users = pgTable('user', {
     ...timestamps
 })
 
+export const thumbnails = pgTable('thumbnails', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    width: integer('width'),
+    height: integer('height'),
+    fileSize: bigint('file_size', { mode: 'number' }),
+    contentType: varchar('content_type', { length: 64 }).notNull().default('image/jpeg'),
+    ...timestamps
+})
+
 export const videos = pgTable('videos', {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: varchar('user_id', { length: 36 }).notNull(),
+    userId: varchar('user_id', { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
     title: text('title'),
     description: text('description'),
     duration: integer('duration').notNull(),
     width: integer('width').notNull(),
     height: integer('height').notNull(),
     fileSize: bigint('file_size', { mode: 'number' }).notNull(),
+    contentType: varchar('content_type', { length: 64 }).notNull(),
     visibility: varchar('visibility', { length: 16 }).notNull(),
     format: varchar('format', { length: 64 }).notNull(),
-    ...timestamps
-})
-
-export const thumbnails = pgTable('thumbnails', {
-    id: uuid('id').defaultRandom().primaryKey(),
-    videoId: uuid('video_id')
-        .references(() => videos.id, { onDelete: 'cascade' })
-        .notNull()
-        .unique(),
-    width: integer('width'),
-    height: integer('height'),
-    fileSize: bigint('file_size', { mode: 'number' }),
+    thumbnailId: uuid('thumbnail_id').references(() => thumbnails.id, { onDelete: 'set null' }),
     ...timestamps
 })
 
@@ -118,12 +118,17 @@ export const userRelations = relations(users, ({ many }) => ({
 
 export const videoRelations = relations(videos, ({ one, many }) => ({
     user: one(users, { fields: [videos.userId], references: [users.id] }),
+    thumbnail: one(thumbnails, { fields: [videos.thumbnailId], references: [thumbnails.id] }),
     types: many(videoTypes),
     topics: many(videoTopics),
     tags: many(videoTags),
     companies: many(videoCompanies),
     people: many(videoPeople),
     audiences: many(videoAudiences)
+}))
+
+export const thumbnailRelations = relations(thumbnails, ({ many }) => ({
+    videos: many(videos)
 }))
 
 export const videoTypesRelations = relations(videoTypes, ({ one }) => ({

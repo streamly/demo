@@ -1,4 +1,4 @@
-import { UserProfile } from '@/shared/types/user'
+import { UserProfileInput } from '@/shared/types/user'
 import axios from 'axios'
 import { createSign } from 'crypto'
 import jwt, { type JwtPayload } from 'jsonwebtoken'
@@ -240,7 +240,7 @@ export async function pushUserAttributes(userId: string, attributes: UserAttribu
     return data.updateUser?.user || null
 }
 
-export async function updateAuthgearUserMetadata(userId: string, updates: UserProfile) {
+export async function updateAuthgearUserMetadata(userId: string, updates: UserProfileInput) {
     const user = await fetchUserById(userId)
 
     if (!user) {

@@ -1,8 +1,8 @@
 'use client'
-import { checkAuthState as checkAuth, signIn as authSignIn, signUp as authSignUp, signOut as authSignOut } from '@client/services/authService'
-import { validateProfileData, isProfileComplete, saveProfile } from '@client/services/profileService'
+import { UserProfileInput } from '@/shared/types/user'
+import { signIn as authSignIn, signOut as authSignOut, signUp as authSignUp, checkAuthState as checkAuth } from '@client/services/authService'
+import { isProfileComplete, saveProfile, validateProfileData } from '@client/services/profileService'
 import { AuthContextType, AuthUser } from '@client/types/profile'
-import { UserProfile } from '@/shared/types/user'
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -15,9 +15,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<AuthUser | null>(null)
-  const [userProfile, setUserProfile] = useState<UserProfile>({})
+  const [userProfile, setUserProfile] = useState<UserProfileInput>({})
 
-  const extractUserProfile = (userInfo: AuthUser): UserProfile => {
+  const extractUserProfile = (userInfo: AuthUser): UserProfileInput => {
     if (!userInfo) return {}
 
     const custom = userInfo.customAttributes ?? {}
@@ -110,7 +110,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return isProfileComplete(userProfile)
   }
 
-  const updateUserProfile = async (profile: UserProfile): Promise<boolean> => {
+  const updateUserProfile = async (profile: UserProfileInput): Promise<boolean> => {
     try {
       await saveProfile(profile)
       setUserProfile(profile)

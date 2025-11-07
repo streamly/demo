@@ -1,6 +1,10 @@
-export function getVideoThumbnail(videoId: string): string {
+export function getVideoThumbnail(thumbnailId: string) {
   const protocol = process.env.NEXT_PUBLIC_IMAGE_PROTOCOL
   const host = process.env.NEXT_PUBLIC_IMAGE_HOST
 
-  return `${protocol}://${host}/${videoId}`
+  return `${protocol}://${host}/${thumbnailId}`
+}
+
+export function getThumbnailPlaceholder(): string {
+  return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMzAgMTEwTDE3MCA5MEwxNzAgMTMwTDEzMCAxMTBaIiBmaWxsPSIjOUI5QjlCIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMTU1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM5QjlCOUIiPlRodW1ibmFpbCBub3QgYXZhaWxhYmxlPC90ZXh0Pgo8L3N2Zz4K'
 }

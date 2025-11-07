@@ -1,7 +1,7 @@
 'use client'
-import { useState } from 'react'
-import { trackContact } from '@client/services/analyticsService'
 import type { VideoHit } from '@client/components/types'
+import { trackContact } from '@client/services/analyticsService'
+import { useState } from 'react'
 
 interface ContactFormProps {
   videoData: VideoHit
@@ -16,7 +16,7 @@ export default function ContactForm({ videoData, onClose, onSuccess }: ContactFo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!message.trim()) {
       setError('Please enter a message')
       return
@@ -27,7 +27,7 @@ export default function ContactForm({ videoData, onClose, onSuccess }: ContactFo
 
     try {
       const success = await trackContact(videoData, message)
-      
+
       if (success) {
         console.log('Contact form submitted successfully')
         onSuccess?.()
@@ -52,16 +52,13 @@ export default function ContactForm({ videoData, onClose, onSuccess }: ContactFo
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
           >
-            ✕
+            ×
           </button>
         </div>
 
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-2">Video:</p>
           <p className="font-medium text-sm">{videoData.title}</p>
-          {videoData.company && (
-            <p className="text-sm text-gray-500">{videoData.company}</p>
-          )}
         </div>
 
         <form onSubmit={handleSubmit}>

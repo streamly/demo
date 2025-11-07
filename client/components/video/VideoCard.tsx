@@ -1,8 +1,9 @@
 'use client'
 import Image from 'next/image'
+import { useState } from 'react'
 import { useAuth } from '@client/components/auth/AuthProvider'
 import type { VideoHit } from '@client/components/types'
-import { getVideoThumbnail } from '@client/utils/thumbnailUtils'
+import { getVideoThumbnail, getThumbnailPlaceholder } from '@client/utils/thumbnailUtils'
 
 interface VideoCardProps {
     hit: VideoHit
@@ -11,12 +12,11 @@ interface VideoCardProps {
 
 export default function VideoCard({ hit, onVideoSelect }: VideoCardProps) {
     const { isAuthenticated, isLoading, signIn } = useAuth()
+    const [imageError, setImageError] = useState(false)
     const tags = Array.isArray(hit.tags) ? hit.tags.slice(0, 3) : []
-    const formattedDuration =
-        typeof hit.duration === 'number' ? formatDuration(hit.duration) : null
     const description = hit.description?.trim()
     // Use new companies array or fallback to legacy company field
-    const company = hit.companies?.[0] || hit.company?.trim() || 'Bizilla'
+    const company = hit.companies?.[0]
     // Get the primary type/category
     const primaryType = hit.types?.[0]
 
@@ -53,21 +53,32 @@ export default function VideoCard({ hit, onVideoSelect }: VideoCardProps) {
                 onClick={handleCardClick}
             >
                 <div className="relative aspect-video overflow-hidden">
-                    <Image
-                        src={getVideoThumbnail(hit.id)}
-                        alt={hit.title}
-                        fill
-                        sizes="(min-width: 1536px) 330px, (min-width: 1280px) 28vw, (min-width: 1024px) 30vw, (min-width: 768px) 45vw, 90vw"
-                        className="h-full w-full object-cover"
-                    />
-
-                    {formattedDuration && (
-                        <div className="absolute bottom-3 right-3">
-                            <span className="rounded bg-black/75 px-2 py-1 text-xs font-medium text-white">
-                                {formattedDuration}
-                            </span>
+                    {imageError || !hit.thumbnail_id ? (
+                        <div className="w-full h-full bg-gray-100 border border-gray-200 flex items-center justify-center">
+                            <div className="text-center">
+                                <div className="w-12 h-12 mx-auto mb-2 bg-gray-300 rounded-lg flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <p className="text-sm text-gray-500 font-medium">No thumbnail</p>
+                            </div>
                         </div>
+                    ) : (
+                        <Image
+                            src={getVideoThumbnail(hit.thumbnail_id)}
+                            alt={hit.title}
+                            fill
+                            sizes="(min-width: 1536px) 330px, (min-width: 1280px) 28vw, (min-width: 1024px) 30vw, (min-width: 768px) 45vw, 90vw"
+                            className="h-full w-full object-cover"
+                            onError={() => setImageError(true)}
+                        />
                     )}
+                    
+                    {/* Duration overlay - ALWAYS positioned relative to the outer container */}
+                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded-md font-medium leading-tight">
+                        {Math.floor((hit.duration || 0) / 60)}:{((hit.duration || 0) % 60).toString().padStart(2, '0')}
+                    </div>
                 </div>
 
                 <div className="p-4">
@@ -110,18 +121,3 @@ export default function VideoCard({ hit, onVideoSelect }: VideoCardProps) {
     )
 }
 
-const formatDuration = (duration: number) => {
-    if (!Number.isFinite(duration) || duration <= 0) return null
-    const totalSeconds = Math.round(duration)
-    const hours = Math.floor(totalSeconds / 3600)
-    const minutes = Math.floor((totalSeconds % 3600) / 60)
-    const seconds = totalSeconds % 60
-
-    const segments = [
-        hours ? String(hours).padStart(2, '0') : null,
-        hours ? String(minutes).padStart(2, '0') : String(minutes),
-        String(seconds).padStart(2, '0'),
-    ].filter(Boolean)
-
-    return segments.join(':')
-}

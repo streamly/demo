@@ -1,15 +1,14 @@
-export interface UserProfile {
-    givenName?: string
-    familyName?: string
-    email?: string
-    phone?: string
-    position?: string
-    company?: string
-    industry?: string
-    website?: string
+export interface UserProfileInput {
+    givenName?: string | null
+    familyName?: string | null
+    email?: string | null
+    phone?: string | null
+    position?: string | null
+    company?: string | null
+    industry?: string | null
+    website?: string | null
 }
 
-export interface UserData extends Required<Omit<UserProfile, 'website'>> {
+export interface UserProfile extends UserProfileInput {
     id: string
-    website?: string
 }

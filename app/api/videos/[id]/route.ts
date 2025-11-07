@@ -1,6 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { AuthgearError, verifyAuthgearUser } from '@server/authgearClient'
 import { getVideoById } from '@server/db/video'
+import { 
+  successResponse, 
+  notFoundResponse, 
+  authErrorResponse, 
+  internalErrorResponse 
+} from '@server/responses'
+import { NextRequest } from 'next/server'
+
+// Helper function for optional authentication
+async function getOptionalUserId(request: NextRequest): Promise<string | null> {
+    try {
+        const authHeader = request.headers.get('authorization')
+        if (authHeader) {
+            const decoded = await verifyAuthgearUser(authHeader)
+            return decoded.sub || null
+        }
+        return null
+    } catch (authError) {
+        console.log('Authentication failed for video request:', authError)
+        return null
+    }
+}
 
 export async function GET(
     request: NextRequest,
@@ -8,43 +29,28 @@ export async function GET(
 ) {
     try {
         const { id: videoId } = await params
-        
+
         // Get video from database
         const video = await getVideoById(videoId)
+
         if (!video) {
-            return NextResponse.json(
-                { error: 'Video not found' },
-                { status: 404 }
-            )
+            return notFoundResponse('Video not found')
         }
 
-        // Try to authenticate user (optional for public videos)
-        let userId: string | null = null
-        try {
-            const authHeader = request.headers.get('authorization')
-            if (authHeader) {
-                const decoded = await verifyAuthgearUser(authHeader)
-                userId = decoded.sub || null
-            }
-        } catch (authError) {
-            // Authentication failed, but we continue for public videos
-            console.log('Authentication failed for video request:', authError)
-        }
+        console.log('Found video', video)
 
-        // Check access permissions
-        const isOwner = userId === video.userId
+        // Try to get user ID (optional for public videos)
+        const userId = await getOptionalUserId(request)
+        
+        const isOwner = userId === video?.user?.id
         const isPublic = video.visibility === 'public'
 
+        // Return 404 for private videos if user is not the owner
         if (!isOwner && !isPublic) {
-            // Not owner and video is not public - return 404 to hide existence
-            return NextResponse.json(
-                { error: 'Video not found' },
-                { status: 404 }
-            )
+            return notFoundResponse('Video not found')
         }
 
-        // Return video data (exclude sensitive info for non-owners)
-        const responseData = {
+        return successResponse({
             id: video.id,
             title: video.title,
             description: video.description,
@@ -56,31 +62,21 @@ export async function GET(
             format: video.format,
             createdAt: video.createdAt,
             updatedAt: video.updatedAt,
-            types: video.types || [],
-            topics: video.topics || [],
-            tags: video.tags || [],
-            companies: video.companies || [],
-            people: video.people || [],
-            audiences: video.audiences || [],
-            // Only include user info for owners or if explicitly needed
-            user: isOwner ? video.user : undefined
-        }
-
-        return NextResponse.json(responseData)
+            types: video.types,
+            topics: video.topics,
+            tags: video.tags,
+            companies: video.companies,
+            people: video.people,
+            audiences: video.audiences,
+        })
 
     } catch (error: any) {
         console.error('Error fetching video:', error)
-        
+
         if (error instanceof AuthgearError) {
-            return NextResponse.json(
-                { error: 'Authentication failed' },
-                { status: 401 }
-            )
+            return authErrorResponse(error.message)
         }
 
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        )
+        return internalErrorResponse('Failed to fetch video')
     }
 }

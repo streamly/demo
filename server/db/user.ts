@@ -1,9 +1,9 @@
-import { UserData } from '@/shared/types/user'
+import { UserProfile } from '@/shared/types/user'
 import { db } from './connection'
 import * as schema from './schema'
 
 
-export async function upsertUser(user: UserData) {
+export async function upsertUser(user: UserProfile) {
     return db
         .insert(schema.users)
         .values(user)

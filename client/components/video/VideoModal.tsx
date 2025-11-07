@@ -98,10 +98,10 @@ export default function VideoModal({ hit, onClose }: VideoModalProps) {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
     }
 
-    const company = hit.company?.trim() || 'Bizilla'
+    const company = hit.companies?.[0] || 'Bizilla'
     const tags = Array.isArray(hit.tags) ? hit.tags : []
-    const categories = Array.isArray(hit.category) ? hit.category : []
-    const channels = Array.isArray(hit.channel) ? hit.channel : []
+    const categories = Array.isArray(hit.types) ? hit.types : []
+    const channels = Array.isArray(hit.audiences) ? hit.audiences : []
 
     return (
         <Modal
@@ -156,11 +156,11 @@ export default function VideoModal({ hit, onClose }: VideoModalProps) {
                                         </button>
                                         
                                         {submitStatus === 'success' && (
-                                            <span className="text-sm text-green-600">✓ Message sent!</span>
+                                            <span className="text-sm text-green-600">Message sent!</span>
                                         )}
                                         
                                         {submitStatus === 'error' && (
-                                            <span className="text-sm text-red-600">✗ Failed to send</span>
+                                            <span className="text-sm text-red-600">Failed to send</span>
                                         )}
                                     </div>
                                 </form>
@@ -184,18 +184,11 @@ export default function VideoModal({ hit, onClose }: VideoModalProps) {
                                         </div>
                                     )}
 
-                                    {hit.length && (
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Length:</span>
-                                            <span className="font-medium text-gray-900">{hit.length}</span>
-                                        </div>
-                                    )}
-
-                                    {hit.created && (
+                                    {hit.created_at && (
                                         <div className="flex justify-between">
                                             <span className="text-gray-600">Published:</span>
                                             <span className="font-medium text-gray-900">
-                                                {formatDate(typeof hit.created === 'number' ? hit.created : parseInt(hit.created))}
+                                                {formatDate(hit.created_at)}
                                             </span>
                                         </div>
                                     )}
@@ -221,7 +214,7 @@ export default function VideoModal({ hit, onClose }: VideoModalProps) {
                                     <div>
                                         <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Categories</span>
                                         <div className="flex flex-wrap gap-1 mt-1">
-                                            {categories.map((category, index) => (
+                                            {categories.map((category: string, index: number) => (
                                                 <span key={index} className="inline-block rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
                                                     {category}
                                                 </span>
@@ -234,7 +227,7 @@ export default function VideoModal({ hit, onClose }: VideoModalProps) {
                                     <div>
                                         <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Channels</span>
                                         <div className="flex flex-wrap gap-1 mt-1">
-                                            {channels.map((channel, index) => (
+                                            {channels.map((channel: string, index: number) => (
                                                 <span key={index} className="inline-block rounded bg-green-100 px-2 py-1 text-xs text-green-800">
                                                     {channel}
                                                 </span>
@@ -272,11 +265,11 @@ export default function VideoModal({ hit, onClose }: VideoModalProps) {
                                 </button>
                                 
                                 {submitStatus === 'success' && (
-                                    <span className="text-sm text-green-600">✓ Message sent!</span>
+                                    <span className="text-sm text-green-600">Message sent!</span>
                                 )}
                                 
                                 {submitStatus === 'error' && (
-                                    <span className="text-sm text-red-600">✗ Failed to send</span>
+                                    <span className="text-sm text-red-600">Failed to send</span>
                                 )}
                             </div>
                         </form>

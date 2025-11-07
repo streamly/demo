@@ -301,10 +301,10 @@ export async function POST(request: NextRequest) {
           duration: updatedVideo.duration,
           format: updatedVideo.format,
           visibility: updatedVideo.visibility,
-          uid: userId,
+          user_id: userId,
           created_at: updatedVideo.createdAt instanceof Date ? updatedVideo.createdAt.getTime() : Date.now(),
           updated_at: updatedVideo.updatedAt instanceof Date ? updatedVideo.updatedAt.getTime() : Date.now(),
-          thumbnail: `https://${process.env.AWS_IMAGES_BUCKET}.s3.amazonaws.com/${id}_thumbnail.jpg`,
+          thumbnail_id: id,
           // Empty arrays for relationships - these can be added later via separate API
           types: [],
           audiences: [],
@@ -314,7 +314,7 @@ export async function POST(request: NextRequest) {
           people: []
         }
 
-        await saveVideoMetadata(typesenseData)
+        await saveVideoMetadata(typesenseData, userId)
 
         return setCorsHeaders(NextResponse.json({
           success: true,

@@ -7,58 +7,26 @@ Schema
 {
   name: "videos",
   fields: [
-    // Unique video ID
     { name: "id", type: "string" },
-
-    // Video title — searchable and indexed
     { name: "title", type: "string", index: true, infix: true, stem: true },
-
-    // Video description — full-text searchable
     { name: "description", type: "string", index: true, infix: true, stem: true },
-
-    // Duration in seconds — sortable and facetable
     { name: "duration", type: "int32", index: true, sort: true, facet: true },
-
-    // Video categories (Corporate, Investor, Event, etc.)
     { name: "types", type: "string[]", index: true, facet: true },
-
-    // Target audiences (Investors, Professionals, etc.)
     { name: "audiences", type: "string[]", index: true, facet: true },
-
-    // Related companies (Tesla, Apple, etc.)
     { name: "companies", type: "string[]", index: true, facet: true },
-
-    // Topics covered (Electric Vehicles, AI, Sustainability, etc.)
     { name: "topics", type: "string[]", index: true, facet: true },
-
-    // Generic tags for easier filtering and search
     { name: "tags", type: "string[]", index: true, facet: true, infix: true },
-
-    // People featured or mentioned in the video
     { name: "people", type: "string[]", index: true, facet: true },
-
-    // Visibility setting: public, unlisted, private
     { name: "visibility", type: "string", index: true, facet: true },
-
-    // File format or content type (e.g. video/mp4)
     { name: "format", type: "string", index: true, facet: true },
-
-    // URL for the video thumbnail
-    { name: "thumbnail", type: "string", index: true },
-
-    // Date/time when the video was created (timestamp, Unix ms)
+    { name: "thumbnail_id", type: "string" },
+    { name: "user_id", type: "string", index: true, facet: true },
     { name: "created_at", type: "int64", index: true, facet: true, sort: true },
-
-    // Date/time when the video was last updated (timestamp, Unix ms)
     { name: "updated_at", type: "int64", index: true, facet: true, sort: true }
   ],
-
-  // Default sorting field for queries
   default_sorting_field: "created_at"
 }
- */
-
-// Initialize Typesense client for server-side use
+*/
 
 const host = process.env.NEXT_PUBLIC_TYPESENSE_HOST
 const port = process.env.NEXT_PUBLIC_TYPESENSE_PORT!
@@ -124,11 +92,11 @@ export async function getVideoByObjectId(objectId: string): Promise<VideoData | 
   try {
     const client = getTypesenseClient()
     const searchResults = await client
-      .collections('videos')
+      .collections(process.env.NEXT_PUBLIC_TYPESENSE_COLLECTION!)
       .documents()
       .search({
         q: '*',
-        filter_by: `objectID:=${objectId}`,
+        filter_by: `id:=${objectId}`,
         per_page: 1,
       })
 
@@ -152,7 +120,7 @@ export async function findInactiveVideo(userId: string): Promise<VideoData | nul
       .documents()
       .search({
         q: '*',
-        filter_by: `uid:=${userId} && visibility:=inactive`,
+        filter_by: `user_id:=${userId} && visibility:=inactive`,
         per_page: 1,
         sort_by: 'created_at:desc',
       })
@@ -169,13 +137,44 @@ export async function findInactiveVideo(userId: string): Promise<VideoData | nul
   }
 }
 
-export async function saveVideoMetadata(videoData: VideoData): Promise<void> {
+export async function getVideosByUserId(userId: string, limit: number = 20): Promise<VideoData[]> {
   try {
     const client = getTypesenseClient()
+    const searchResults = await client
+      .collections(process.env.NEXT_PUBLIC_TYPESENSE_COLLECTION!)
+      .documents()
+      .search({
+        q: '*',
+        filter_by: `user_id:=${userId}`,
+        per_page: limit,
+        sort_by: 'updated_at:desc',
+      })
+
+    if (searchResults.hits && searchResults.hits.length > 0) {
+      return searchResults.hits.map(hit => hit.document as VideoData)
+    }
+
+    return []
+  } catch (error) {
+    console.error('Failed to fetch user videos from Typesense:', error)
+    return []
+  }
+}
+
+export async function saveVideoMetadata(videoData: VideoData, userId?: string): Promise<void> {
+  try {
+    const client = getTypesenseClient()
+    
+    // Ensure user_id is included in the document
+    const documentToSave = {
+      ...videoData,
+      ...(userId && { user_id: userId })
+    }
+    
     await client
       .collections(process.env.NEXT_PUBLIC_TYPESENSE_COLLECTION!)
       .documents()
-      .upsert(videoData)
+      .upsert(documentToSave)
   } catch (error) {
     console.error('Failed to save video metadata to Typesense:', error)
     throw error

@@ -36,22 +36,22 @@ export default function AuthCallback() {
         })
 
         // Handle the authentication callback
-        console.log('🔄 Finishing authentication...')
+        console.log('Finishing authentication...')
         await authgear.finishAuthentication()
-        console.log('✅ Authentication completed successfully')
+        console.log('Authentication completed successfully')
 
         // Refresh auth state in the provider
-        console.log('🔄 Refreshing auth state...')
+        console.log('Refreshing auth state...')
         await refreshAuth()
 
         // Check if user has complete profile
         const hasCompleteProfile = checkIfUserHasCompleteProfile()
         
         if (!hasCompleteProfile) {
-          console.log('👤 Profile incomplete, redirecting to home with modal trigger')
+          console.log('Profile incomplete, redirecting to home with modal trigger')
           router.push('/?showProfileModal=true')
         } else {
-          console.log('🏠 Profile complete, redirecting to home page')
+          console.log('Profile complete, redirecting to home page')
           router.push('/')
         }
       } catch (error) {

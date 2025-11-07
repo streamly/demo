@@ -79,23 +79,23 @@ export function useUppyInstance({
   // Upload progress handler
   const handleUploadProgress = useCallback((file: any, progress: any) => {
     const percentage = Math.round((progress.bytesUploaded / progress.bytesTotal) * 100)
-    console.log(`📊 Upload progress: ${percentage}% (${progress.bytesUploaded}/${progress.bytesTotal} bytes)`)
+    console.log(`Upload progress: ${percentage}% (${progress.bytesUploaded}/${progress.bytesTotal} bytes)`)
     setUploadStatus?.(`Uploading... ${percentage}%`)
   }, [setUploadStatus])
 
   // Upload complete handler
   const handleUploadComplete = useCallback(async (result: any) => {
-    console.log('🎯 Upload complete event:', result)
+    console.log('Upload complete event:', result)
     
     if (result.failed?.length > 0) {
-      console.error('❌ Upload failed:', result.failed)
+      console.error('Upload failed:', result.failed)
       setError?.(`Upload failed: ${result.failed[0].error?.message || 'Unknown error'}`)
       setUploadStatus?.('')
       return
     }
 
     if (!result.successful?.length) {
-      console.error('❌ No files uploaded successfully')
+      console.error('No files uploaded successfully')
       setError?.('No files uploaded.')
       setUploadStatus?.('')
       return
@@ -104,7 +104,7 @@ export function useUppyInstance({
     const uploadedFile = result.successful[0]
     const meta = uploadedFile.meta
     const videoId = meta?.serverVideoId
-    console.log('✅ File uploaded successfully:', uploadedFile.name, 'ID:', videoId, 'Meta:', meta)
+    console.log('File uploaded successfully:', uploadedFile.name, 'ID:', videoId, 'Meta:', meta)
 
     try {
       setUploadStatus?.('Saving metadata...')
@@ -112,24 +112,24 @@ export function useUppyInstance({
       const data = await uploadAPI.saveVideoMetadata(uploadedFile, meta)
       
       if (data.success) {
-        console.log('✅ Upload and metadata save complete!')
+        console.log('Upload and metadata save complete!')
         setUploadStatus?.('Upload complete! Redirecting...')
         setTimeout(() => {
           if (onUploadComplete) {
-            console.log('🔄 Calling onUploadComplete callback')
+            console.log('Calling onUploadComplete callback')
             onUploadComplete(videoId)
           } else {
-            console.log('🔄 Redirecting to dashboard with video ID')
+            console.log('Redirecting to dashboard with video ID')
             router.push(`/dashboard?v=${encodeURIComponent(videoId)}`)
           }
         }, 1000)
       } else {
-        console.error('❌ Metadata save failed:', data)
+        console.error('Metadata save failed:', data)
         setError?.('Metadata save failed. Check server logs.')
         setUploadStatus?.('')
       }
     } catch (err) {
-      console.error('❌ Metadata save error:', err)
+      console.error('Metadata save error:', err)
       setError?.('Upload succeeded but saving metadata failed. Please try again later.')
       setUploadStatus?.('')
     }
@@ -146,7 +146,7 @@ export function useUppyInstance({
   useMemo(() => {
     uppy.on('file-added', handleFileAdded)
     uppy.on('upload', () => {
-      console.log('🚀 Upload started')
+      console.log('Upload started')
       setUploadStatus?.('Uploading...')
     })
     uppy.on('upload-progress', handleUploadProgress)

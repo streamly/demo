@@ -1,5 +1,5 @@
 'use client'
-import { UserProfile } from '@/shared/types/user'
+import { UserProfileInput } from '@/shared/types/user'
 import { useAuth } from '@client/components/auth/AuthProvider'
 import Alert from '@client/components/ui/Alert'
 import Button from '@client/components/ui/Button'
@@ -15,7 +15,7 @@ interface ProfileModalProps {
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { userProfile, updateUserProfile, getMissingProfileFields } = useAuth()
-  const [formData, setFormData] = useState<UserProfile>({
+  const [formData, setFormData] = useState<UserProfileInput>({
     givenName: '',
     familyName: '',
     email: '',
@@ -54,7 +54,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
     // Client-side validation matching backend schema
     const errors: Record<string, string> = {}
-    
+
     // Required fields with length validation
     const requiredFields = {
       givenName: { label: 'First Name', maxLength: 100 },
@@ -65,18 +65,18 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       phone: { label: 'Phone', maxLength: null },
       email: { label: 'Email', maxLength: null }
     }
-    
+
     for (const [field, config] of Object.entries(requiredFields)) {
-      const value = formData[field as keyof UserProfile]
+      const value = formData[field as keyof UserProfileInput]
       const trimmedValue = typeof value === 'string' ? value.trim() : ''
-      
+
       if (!trimmedValue) {
         errors[field] = `${config.label} is required`
       } else if (config.maxLength && trimmedValue.length > config.maxLength) {
         errors[field] = `${config.label} must be ${config.maxLength} characters or less`
       }
     }
-    
+
     // Website validation (optional but must be valid URL if provided)
     if (formData.website && formData.website.trim()) {
       const website = formData.website.trim()
@@ -90,7 +90,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         }
       }
     }
-    
+
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       setSubmitStatus('error')
@@ -99,7 +99,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }
 
     const success = await updateUserProfile(formData)
-    
+
     if (success) {
       setSubmitStatus('success')
       setTimeout(() => {
@@ -109,7 +109,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     } else {
       setSubmitStatus('error')
     }
-    
+
     setIsSubmitting(false)
   }
 
@@ -156,7 +156,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           label="First Name"
           id="givenName"
           name="givenName"
-          value={formData.givenName}
+          value={formData.givenName!}
           onChange={handleChange}
           required
           error={fieldErrors.givenName}
@@ -166,7 +166,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           label="Last Name"
           id="familyName"
           name="familyName"
-          value={formData.familyName}
+          value={formData.familyName!}
           onChange={handleChange}
           required
           error={fieldErrors.familyName}
@@ -177,7 +177,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           type="email"
           id="email"
           name="email"
-          value={formData.email}
+          value={formData.email!}
           onChange={handleChange}
           disabled
           className="opacity-60"
@@ -189,7 +189,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           type="tel"
           id="phone"
           name="phone"
-          value={formData.phone}
+          value={formData.phone!}
           onChange={handleChange}
           required
           error={fieldErrors.phone}
@@ -199,7 +199,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           label="Company / Organization"
           id="company"
           name="company"
-          value={formData.company}
+          value={formData.company!}
           onChange={handleChange}
           required
           error={fieldErrors.company}
@@ -209,7 +209,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           label="Title / Position"
           id="position"
           name="position"
-          value={formData.position}
+          value={formData.position!}
           onChange={handleChange}
           required
           error={fieldErrors.position}
@@ -219,7 +219,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           label="Industry"
           id="industry"
           name="industry"
-          value={formData.industry}
+          value={formData.industry!}
           onChange={handleChange}
           options={INDUSTRY_OPTIONS}
           placeholder="Select an industry"
@@ -232,7 +232,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           type="url"
           id="website"
           name="website"
-          value={formData.website}
+          value={formData.website!}
           onChange={handleChange}
           placeholder="https://example.com"
           error={fieldErrors.website}

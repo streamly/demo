@@ -1,7 +1,7 @@
+import { DraftVideo, VideoInput, VideoWithRelations } from '@/shared/types/video'
 import { and, eq } from 'drizzle-orm'
 import { db } from './connection'
 import * as schema from './schema'
-import { DraftVideo, VideoInput, VideoWithRelations, VideoMetadata, TypesenseVideo } from '@/shared/types/video'
 
 
 export async function verifyVideoOwnership(userId: string, videoId: string): Promise<boolean> {
@@ -24,7 +24,8 @@ export async function createDraftVideo(userId: string): Promise<DraftVideo> {
             height: 0,
             fileSize: 0,
             visibility: 'draft',
-            format: 'video/mp4'
+            contentType: 'video/mp4',
+            format: 'Video on Demand'
         })
         .returning()
 
@@ -104,7 +105,7 @@ export async function getVideoById(videoId: string): Promise<VideoWithRelations 
 
     return {
         id: video.id,
-        userId: video.userId,
+        user: video.user,
         title: video.title || undefined,
         description: video.description || undefined,
         duration: video.duration,
@@ -113,15 +114,8 @@ export async function getVideoById(videoId: string): Promise<VideoWithRelations 
         fileSize: video.fileSize,
         visibility: video.visibility,
         format: video.format,
-        createdAt: video.createdAt || undefined,
-        updatedAt: video.updatedAt || undefined,
-        user: video.user ? {
-            id: video.user.id,
-            givenName: video.user.givenName || undefined,
-            familyName: video.user.familyName || undefined,
-            email: video.user.email || undefined,
-            company: video.user.company || undefined
-        } : undefined,
+        createdAt: video.createdAt,
+        updatedAt: video.updatedAt,
         types: video.types.map((t) => t.typeName).filter((name): name is string => Boolean(name)),
         topics: video.topics.map((t) => t.topicName).filter((name): name is string => Boolean(name)),
         tags: video.tags.map((t) => t.tagName).filter((name): name is string => Boolean(name)),

@@ -1,38 +1,36 @@
 'use client'
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { InstantSearch } from 'react-instantsearch'
 import { createInstantSearchAdapter } from '@client/services/typesenseService'
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
+import { InstantSearch } from 'react-instantsearch'
 
 interface TypesenseSearchContextType {
   searchClient: any | null
   isReady: boolean
   error: string | null
-  setApiKey: (apiKey: string) => void
+  initializeWithScopedKey: (apiKey: string) => Promise<void>
 }
 
 const TypesenseSearchContext = createContext<TypesenseSearchContextType | undefined>(undefined)
 
 interface TypesenseSearchProviderProps {
   children: ReactNode
-  apiKey?: string // Optional custom API key (for dashboard)
-  autoInitialize?: boolean // Whether to initialize immediately with default key
+  autoInitialize?: boolean // Whether to initialize immediately
 }
 
-export function TypesenseSearchProvider({ 
-  children, 
-  apiKey,
-  autoInitialize = true 
+export function TypesenseSearchProvider({
+  children,
+  autoInitialize = true
 }: TypesenseSearchProviderProps) {
   const [searchClient, setSearchClient] = useState<any>(null)
   const [isReady, setIsReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const initializeSearchClient = async (key?: string) => {
+  const initializeSearchClient = async (apiKey?: string) => {
     try {
-      console.log('Initializing Typesense search client...')
+      console.log('Initializing Typesense search client...', apiKey ? 'with scoped key' : 'with default key')
       // Use requestAnimationFrame to ensure skeleton renders first
       await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)))
-      const adapter = createInstantSearchAdapter(key)
+      const adapter = createInstantSearchAdapter(apiKey)
       setSearchClient(adapter.searchClient)
       setIsReady(true)
       setError(null)
@@ -44,23 +42,23 @@ export function TypesenseSearchProvider({
     }
   }
 
+  const initializeWithScopedKey = async (apiKey: string) => {
+    setIsReady(false)
+    await initializeSearchClient(apiKey)
+  }
+
   // Initialize on mount if autoInitialize is true
   useEffect(() => {
     if (autoInitialize) {
-      initializeSearchClient(apiKey)
+      initializeSearchClient()
     }
-  }, [apiKey, autoInitialize])
-
-  const handleSetApiKey = (newApiKey: string) => {
-    setIsReady(false)
-    initializeSearchClient(newApiKey)
-  }
+  }, [autoInitialize])
 
   const value: TypesenseSearchContextType = {
     searchClient,
     isReady,
     error,
-    setApiKey: handleSetApiKey
+    initializeWithScopedKey
   }
 
   return (
@@ -85,10 +83,10 @@ interface InstantSearchWrapperProps {
   loadingComponent?: ReactNode
 }
 
-export function InstantSearchWrapper({ 
-  children, 
-  indexName = 'videos',
-  loadingComponent 
+export function InstantSearchWrapper({
+  children,
+  indexName = process.env.NEXT_PUBLIC_TYPESENSE_COLLECTION,
+  loadingComponent
 }: InstantSearchWrapperProps) {
   const { searchClient, isReady, error } = useTypesenseSearch()
 
@@ -107,17 +105,17 @@ export function InstantSearchWrapper({
   if (!isReady || !searchClient) {
     // Create a minimal search client for InstantSearch to work
     const dummyClient = {
-      search: () => Promise.resolve({ 
-        results: [{ 
-          hits: [], 
-          nbHits: 0, 
-          page: 0, 
-          nbPages: 0, 
-          hitsPerPage: 20, 
+      search: () => Promise.resolve({
+        results: [{
+          hits: [],
+          nbHits: 0,
+          page: 0,
+          nbPages: 0,
+          hitsPerPage: 20,
           processingTimeMS: 0,
           query: '',
           params: ''
-        }] 
+        }]
       })
     }
     return (
